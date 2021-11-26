@@ -43,33 +43,34 @@ if [ $stage = 0 ]; then
   echo ---------------------------------------------------------------------
   echo "Preparing acoustic training lists in data/train on" `date`
   echo ---------------------------------------------------------------------
-  mv data/train_seg/text data/train_seg/text_orig
+    cp data/train/text data/train_seg/text
+    mv data/train_seg/text data/train_seg/text_orig
   
-  num_silence_segments=$(cat data/train_seg/text_orig | awk '{if (NF == 2 && $2 == "<silence>") {print $0}}' | wc -l)
-  num_keep_silence_segments=`perl -e "printf '%d', ($num_silence_segments * $silence_segment_fraction)"` 
-  if [ $num_silence_segments -eq $num_keep_silence_segments ]; then
-    # Keep all segments including silence segments
-    cat data/train_seg/text_orig | awk '{if (NF == 2 && $2 == "<silence>") {print $1} else {print $0}}' > data/train_seg/text
-  else
-    # Keep only a fraction of silence segments
+    num_silence_segments=$(cat data/train_seg/text_orig | awk '{if (NF == 2 && $2 == "<silence>") {print $0}}' | wc -l)
+    num_keep_silence_segments=`perl -e "printf '%d', ($num_silence_segments * $silence_segment_fraction)"` 
+    if [ $num_silence_segments -eq $num_keep_silence_segments ]; then
+        # Keep all segments including silence segments
+        cat data/train_seg/text_orig | awk '{if (NF == 2 && $2 == "<silence>") {print $1} else {print $0}}' > data/train_seg/text
+    else
+        # Keep only a fraction of silence segments
 
-    cat data/train_seg/text_orig \
-      | awk 'BEGIN{i=0} \
-      { \
-        if (NF == 2 && $2 == "<silence>") { \
-          if (i<'$num_keep_silence_segments') { \
-            print $1; \
-            i++; \
-          } \
-        } else {print $0}\
-      }' > data/train_seg/text
-  fi
-  #rm data/train_seg/text_orig
-  utils/fix_data_dir.sh data/train_seg
+        cat data/train_seg/text_orig \
+            | awk 'BEGIN{i=0} \
+            { \
+                if (NF == 2 && $2 == "<silence>") { \
+                if (i<'$num_keep_silence_segments') { \
+                    print $1; \
+                    i++; \
+                } \
+            } else {print $0}\
+        }' > data/train_seg/text
+    fi
+    #rm data/train_seg/text_orig
+    utils/fix_data_dir.sh data/train_seg
 
-  echo ---------------------------------------------------------------------
-  echo "Starting plp feature extraction for data/train_seg in plp on" `date`
-  echo ---------------------------------------------------------------------
+    echo ---------------------------------------------------------------------
+    echo "Starting plp feature extraction for data/train_seg in plp on" `date`
+    echo ---------------------------------------------------------------------
 
     if $use_pitch; then
       steps/make_plp_pitch.sh --cmd "$train_cmd" --nj $train_nj \
