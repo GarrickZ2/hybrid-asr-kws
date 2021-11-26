@@ -1,18 +1,22 @@
 #!/usr/bin/env bash
 
+echo "Loading Config"
 . ./cmd.sh
 . ./path.sh
 . ./conf/common_vars.sh || exit 1;
 . ./conf/lang.conf || exit 1;
+echo "Finish Loading Config"
 
 tri5_only=false
 sgmm5_only=false
 data_only=false
 
 stage=$1
+nj=35
+decode_nj=30
 
 # download the training data
-if [$stage = 0]; then
+if [ $stage = 0 ]; then
     echo "===============Start to download necessary data===================="
     local/download_data.sh
     echo "===============Finish download and extract data===================="
@@ -118,10 +122,10 @@ if [ $stage = 9 ]; then
 fi
 
 
-echo ---------------------------------------------------------------------
-echo "Starting (medium) triphone training in exp/tri2 on" `date`
-echo ---------------------------------------------------------------------
 if [ $stage = 10 ]; then
+  echo ---------------------------------------------------------------------
+  echo "Starting (medium) triphone training in exp/tri2 on" `date`
+  echo ---------------------------------------------------------------------
   steps/align_si.sh \
     --boost-silence $boost_sil --nj 24 --cmd "$train_cmd" \
     data/train_20kshort_nodup data/lang_nosp exp/tri1 exp/tri1_ali_sub3
@@ -131,10 +135,10 @@ if [ $stage = 10 ]; then
     data/train_20kshort_nodup data/lang_nosp exp/tri1_ali_sub3 exp/tri2
 fi
 
-echo ---------------------------------------------------------------------
-echo "Starting (full) triphone training in exp/tri3 on" `date`
-echo ---------------------------------------------------------------------
 if [ $stage = 11 ]; then
+  echo ---------------------------------------------------------------------
+  echo "Starting (full) triphone training in exp/tri3 on" `date`
+  echo ---------------------------------------------------------------------
   steps/align_si.sh \
     --boost-silence $boost_sil --nj $train_nj --cmd "$train_cmd" \
     data/train data/lang_nosp exp/tri2 exp/tri2_ali
@@ -144,10 +148,10 @@ if [ $stage = 11 ]; then
 fi
 
 # This will be used in the next segmentation
-echo ---------------------------------------------------------------------
-echo "Starting (lda_mllt) triphone training in exp/tri4 on" `date`
-echo ---------------------------------------------------------------------
 if [ $stage = 12 ]; then
+  echo ---------------------------------------------------------------------
+  echo "Starting (lda_mllt) triphone training in exp/tri4 on" `date`
+  echo ---------------------------------------------------------------------
   steps/align_si.sh \
     --boost-silence $boost_sil --nj $train_nj --cmd "$train_cmd" \
     data/train data/lang exp/tri3 exp/tri3_ali
@@ -156,10 +160,10 @@ if [ $stage = 12 ]; then
     $numLeavesMLLT $numGaussMLLT data/train data/lang exp/tri3_ali exp/tri4
 fi
 
-echo ---------------------------------------------------------------------
-echo "Starting (SAT) triphone training in exp/tri5 on" `date`
-echo ---------------------------------------------------------------------
 if [ $stage = 13 ]; then
+  echo ---------------------------------------------------------------------
+  echo "Starting (SAT) triphone training in exp/tri5 on" `date`
+  echo ---------------------------------------------------------------------
   steps/align_si.sh \
     --boost-silence $boost_sil --nj $train_nj --cmd "$train_cmd" \
     data/train data/lang_nosp exp/tri4 exp/tri4_ali
