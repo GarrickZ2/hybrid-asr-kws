@@ -5,9 +5,9 @@
 #            2016  John Hopkins University (author: Daniel Povey)
 # Apache 2.0
 
-mkdir -p tedlium2
+mkdir -p db 
 
-cd tedlium2  ### Note: the rest of this script is executed from the directory 'db'.
+cd db ### Note: the rest of this script is executed from the directory 'db'.
 
 # TED-LIUM database:
 if [[ $(hostname -f) == *.clsp.jhu.edu ]] ; then

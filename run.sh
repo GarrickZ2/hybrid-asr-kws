@@ -118,10 +118,9 @@ if [ $stage = 9 ]; then
     data/train_10kshort_nodup data/lang_nosp exp/mono exp/mono_ali_sub2
   steps/train_deltas.sh \
     --boost-silence $boost_sil --cmd "$train_cmd" $numLeavesTri1 $numGaussTri1 \
-    # --cmd "$train_cmd" 2500 30000 \
     data/train_10kshort_nodup data/lang_nosp exp/mono_ali_sub2 exp/tri1
 fi
-
+# --cmd "$train_cmd" 2500 30000 \
 
 if [ $stage = 10 ]; then
   echo ---------------------------------------------------------------------
@@ -132,9 +131,9 @@ if [ $stage = 10 ]; then
     data/train_20kshort_nodup data/lang_nosp exp/tri1 exp/tri1_ali_sub3
   steps/train_deltas.sh \
     --cmd "$train_cmd" $numLeavesTri2 $numGaussTri2 \
-    # --cmd "$train_cmd" 2500 30000 \
     data/train_20kshort_nodup data/lang_nosp exp/tri1_ali_sub3 exp/tri2
 fi
+# --cmd "$train_cmd" 2500 30000 \
 
 if [ $stage = 11 ]; then
   echo ---------------------------------------------------------------------
@@ -155,10 +154,10 @@ if [ $stage = 12 ]; then
   echo ---------------------------------------------------------------------
   steps/align_si.sh \
     --boost-silence $boost_sil --nj $train_nj --cmd "$train_cmd" \
-    data/train data/lang exp/tri3 exp/tri3_ali
+    data/train data/lang_nosp exp/tri3 exp/tri3_ali
   steps/train_lda_mllt.sh \
     --boost-silence $boost_sil --cmd "$train_cmd" \
-    $numLeavesMLLT $numGaussMLLT data/train data/lang exp/tri3_ali exp/tri4
+    $numLeavesMLLT $numGaussMLLT data/train data/lang_nosp exp/tri3_ali exp/tri4
 fi
 
 if [ $stage = 13 ]; then
@@ -170,7 +169,7 @@ if [ $stage = 13 ]; then
     data/train data/lang_nosp exp/tri4 exp/tri4_ali
   steps/train_sat.sh \
     --boost-silence $boost_sil --cmd "$train_cmd" \
-    $numLeavesSAT $numGaussSAT data/train data/lang exp/tri4_ali exp/tri5
+    $numLeavesSAT $numGaussSAT data/train data/lang_nosp exp/tri4_ali exp/tri5
 fi
 
 ################################################################################
@@ -206,7 +205,7 @@ if [ $stage = 16 ]; then
   echo ---------------------------------------------------------------------
   steps/train_sgmm2.sh \
     --cmd "$train_cmd" $numLeavesSGMM $numGaussSGMM \
-    data/train data/lang exp/tri5_ali exp/ubm5/final.ubm exp/sgmm5
+    data/train data/lang_nosp exp/tri5_ali exp/ubm5/final.ubm exp/sgmm5
   #steps/train_sgmm2_group.sh \
   #  --cmd "$train_cmd" "${sgmm_group_extra_opts[@]-}" $numLeavesSGMM $numGaussSGMM \
   #  data/train data/lang exp/tri5_ali exp/ubm5/final.ubm exp/sgmm5
@@ -228,7 +227,7 @@ if [ $stage = 17 ]; then
   steps/align_sgmm2.sh \
     --nj $train_nj --cmd "$train_cmd" --transform-dir exp/tri5_ali \
     --use-graphs true --use-gselect true \
-    data/train data/lang exp/sgmm5 exp/sgmm5_ali
+    data/train data/lang_nosp exp/sgmm5 exp/sgmm5_ali
   touch exp/sgmm5_ali/.done
 fi
 
@@ -239,7 +238,7 @@ if [ $stage = 18 ]; then
   steps/make_denlats_sgmm2.sh \
     --nj $train_nj --sub-split $train_nj "${sgmm_denlats_extra_opts[@]}" \
     --beam 10.0 --lattice-beam 6 --cmd "$decode_cmd" --transform-dir exp/tri5_ali \
-    data/train data/lang exp/sgmm5_ali exp/sgmm5_denlats
+    data/train data/lang_nosp exp/sgmm5_ali exp/sgmm5_denlats
   touch exp/sgmm5_denlats/.done
 fi
 
@@ -250,7 +249,7 @@ if [ $stage = 19 ]; then
   steps/train_mmi_sgmm2.sh \
     --cmd "$train_cmd" "${sgmm_mmi_extra_opts[@]}" \
     --drop-frames true --transform-dir exp/tri5_ali --boost 0.1 \
-    data/train data/lang exp/sgmm5_ali exp/sgmm5_denlats \
+    data/train data/lang_nosp exp/sgmm5_ali exp/sgmm5_denlats \
     exp/sgmm5_mmi_b0.1
   touch exp/sgmm5_mmi_b0.1/.done
 fi
