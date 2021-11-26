@@ -14,7 +14,7 @@ stage=$1
 # download the training data
 if [$stage = 0]; then
     echo "===============Start to download necessary data===================="
-    utils/download_data.sh
+    local/download_data.sh
     echo "===============Finish download and extract data===================="
 fi
 
