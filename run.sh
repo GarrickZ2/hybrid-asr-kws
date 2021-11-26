@@ -15,6 +15,7 @@ stage=$1
 nj=35
 decode_nj=30
 
+
 # download the training data
 if [ $stage = 0 ]; then
     echo "===============Start to download necessary data===================="
