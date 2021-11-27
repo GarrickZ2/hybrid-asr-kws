@@ -71,9 +71,14 @@ fi
 if [ $stage = 6 ]; then
     for set in test dev train; do
         echo "===============Start Extract $set Feature===================="
-        dir=data/$set
-        steps/make_mfcc.sh --nj 30 --cmd "$train_cmd" $dir
-        steps/compute_cmvn_stats.sh $dir
+        if $use_pitch; then
+			steps/make_plp_pitch.sh --cmd "$train_cmd" --nj $train_nj data/$set exp/make_plp_pitch/$set plp/$set
+		else
+ 		   steps/make_plp.sh --cmd "$train_cmd" --nj $train_nj data/$set exp/$set/$set plp/$set
+ 		fi
+  		utils/fix_data_dir.sh data/$set
+  		steps/compute_cmvn_stats.sh data/$set exp/make_plp/$set plp/$set
+  		utils/fix_data_dir.sh data/$set
         echo "===============Finish Extract $set Feature===================="
     done
 fi
