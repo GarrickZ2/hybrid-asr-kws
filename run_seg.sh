@@ -92,7 +92,7 @@ if [ $stage = 1 ]; then
 
     local/resegment/train_segmentation.sh \
         --boost-sil 1.0 --nj $train_nj --cmd "$decode_cmd" \
-    exp/tri4 data/train_seg data/lang exp/tri4b_seg || exit 1
+    exp/tri4 data/train_seg data/lang_nosp exp/tri4b_seg || exit 1
 
     echo ---------------------------------------------------------------------
     echo "Finished successfully on" `date`
