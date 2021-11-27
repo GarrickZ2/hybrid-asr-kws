@@ -26,10 +26,9 @@ set -u           #Fail on an undefined variable
 
 #Later in the script we assume the run-1-main.sh was run (because we are using exp/tri4)
 #So let's make it mandatory, instead of doing the work on our own.
-[ ! -f data/raw_train_data/.done ] && echo "The source training data directory is not ready. Use the run-1-main.sh script to prepare it!" && exit 1
 
 # Set the number of jobs and decode number of jobs
-nj_max= $train_nj
+nj_max=20 
 
 # Transfer the relative data path in absolute path
 train_data_dir=`utils/make_absolute.sh ./data/raw_train_data`
