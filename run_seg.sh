@@ -42,7 +42,7 @@ if [ $stage = 0 ]; then
   echo ---------------------------------------------------------------------
   echo "Preparing acoustic training lists in data/train on" `date`
   echo ---------------------------------------------------------------------
-    cp data/train/text data/train_seg/text
+    cp -r data/train/* data/train_seg/
     mv data/train_seg/text data/train_seg/text_orig
   
     num_silence_segments=$(cat data/train_seg/text_orig | awk '{if (NF == 2 && $2 == "<silence>") {print $0}}' | wc -l)
