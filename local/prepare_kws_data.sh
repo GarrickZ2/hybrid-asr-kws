@@ -41,16 +41,15 @@ fi
 
 # Create RTTM file
 if [ ! -f $kw_dir/.rttm.done ]; then
-    ./local/ali_to_rttm.sh $in_dir $lang $ou_dir
-    cp $out_dir/rttm $kw_dir/rttm
+    ./steps/segmentation/convert_utt2spk_and_segments_to_rttm.py $in_dir/utt2spk $in_dir/segments $kw_dir/rttm
     touch $kw_dir/.rttm.done
 fi
 
-exit 0
-
 # Setup KWS
 if [ ! -f $kw_dir/.setup.done ]; then
-    kws_data_prep.sh $lang $in_dir $kw_dir
+    ./local/kws_data_prep.sh $lang $in_dir $kw_dir
+    
+    exit 0
 
     local/kws_setup.sh \
     --case_insensitive $case_insensitive \
