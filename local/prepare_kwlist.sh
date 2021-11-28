@@ -3,10 +3,10 @@
 kws_prep=$1
 #specify the subword segmentation or leave it empyt for words
 
-[ -f path.sh ] && . ../path.sh # source the path.
+[ -f path.sh ] && . ./path.sh # source the path.
 echo $0 "$@"
-. ../utils/parse_options.sh
-mkdir -p kws_prep
+. ./utils/parse_options.sh
+
 #create kws word lists
 if [ ! -f $kws_prep/kwlist.xml ]; then
     echo '<kwlist ecf_filename="ecf.xml" language="English" encoding="UTF-8" compareNormalize="" version="keywords">' > $kws_prep/kwlist.xml
