@@ -35,7 +35,7 @@ if [ ! -f $kw_dir/keyword.txt ]; then
 fi
 
 if [ ! -f $kw_dir/.kwlist.done ]; then
-    prepare_kwlist.sh $kw_dir/keyword.txt
+    ./local/prepare_kwlist.sh $kw_dir
     touch $kw_dir/.kwlist.done
 fi
 
@@ -45,6 +45,8 @@ if [ ! -f $kw_dir/.rttm.done ]; then
     cp $out_dir/rttm $kw_dir/rttm
     touch $kw_dir/.rttm.done
 fi
+
+exit 0
 
 # Setup KWS
 if [ ! -f $kw_dir/.setup.done ]; then

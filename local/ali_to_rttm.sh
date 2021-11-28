@@ -59,7 +59,7 @@ wend=`grep "#2" $lang/phones.txt | head -1 | awk '{print $2}'`
 
 if [ ! -f $lang/L_align.fst ]; then
   echo "$0: generating $lang/L_align.fst"
-  local/make_L_align.sh data/local/tmp.lang/ $lang $lang 2>&1 | tee $dir/log/L_align.log
+  local/make_L_align.sh data/local/lang_nosp $lang $lang 2>&1 | tee $dir/log/L_align.log
 fi
 
 $cmd $dir/log/align_to_words.log \
