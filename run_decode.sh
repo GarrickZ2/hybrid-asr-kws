@@ -2,8 +2,10 @@
 set -e
 set -o pipefail
 
-. conf/common_vars.sh || exit 1;
-. ./lang.conf || exit 1;
+. ./cmd.sh
+. ./path.sh
+. ./conf/common_vars.sh || exit 1;
+. ./conf/lang.conf || exit 1;
 
 
 dir=dev10h.seg
@@ -49,6 +51,7 @@ dataset_id=$dir
 dataset_type=${dir%%.*}
 #By default, we want the script to accept how the dataset should be handled,
 #i.e. of  what kind is the dataset
+
 if [ -z ${kind} ] ; then
   if [ "$dataset_type" == "dev2h" ] || [ "$dataset_type" == "dev10h" ] ; then
     dataset_kind=supervised
@@ -74,21 +77,21 @@ if [ "$dataset_kind" == "unsupervised" ]; then
 fi
 
 #The $dataset_type value will be the dataset name without any extrension
-eval my_data_dir=( "\${${dataset_type}_data_dir[@]}" )
-eval my_data_list=( "\${${dataset_type}_data_list[@]}" )
-if [ -z $my_data_dir ] || [ -z $my_data_list ] ; then
-  echo "Error: The dir you specified ($dataset_id) does not have existing config";
-  exit 1
-fi
-
-eval my_stm_file=\$${dataset_type}_stm_file
-eval my_ecf_file=\$${dataset_type}_ecf_file 
-eval my_kwlist_file=\$${dataset_type}_kwlist_file 
-eval my_rttm_file=\$${dataset_type}_rttm_file
+eval my_stm_file=$dataset_dir/stm
+eval my_ecf_file=$dataset_dir/kws_data/ecf.xml
+eval my_kwlist_file=$dataset_dir/kws_data/kwlist.xml
+eval my_rttm_file=$dataset_dir/kws_data/rttm
 eval my_nj=\$${dataset_type}_nj  #for shadow, this will be re-set when appropriate
+
+echo $my_stm_file
+echo $my_ecf_file
+echo $my_kwlist_file
+echo $my_rttm_file
+echo $my_nj
 
 my_subset_ecf=false
 eval ind=\${${dataset_type}_subset_ecf+x}
+
 if [ "$ind" == "x" ] ; then
   eval my_subset_ecf=\$${dataset_type}_subset_ecf
 fi
@@ -100,6 +103,8 @@ do
   eval my_more_kwlist_val="\${${dataset_type}_more_kwlists[$key]}"
   my_more_kwlists["$key"]="${my_more_kwlist_val}"
 done
+
+echo $my_more_kwlists
 
 #Just a minor safety precaution to prevent using incorrect settings
 #The dataset_* variables should be used.
@@ -143,116 +148,12 @@ function check_variables_are_set {
   fi
 }
 
-if [ ! -f data/raw_${dataset_type}_data/.done ]; then
-  echo ---------------------------------------------------------------------
-  echo "Subsetting the ${dataset_type} set"
-  echo ---------------------------------------------------------------------
-
-  l1=${#my_data_dir[*]}
-  l2=${#my_data_list[*]}
-  if [ "$l1" -ne "$l2" ]; then
-    echo "Error, the number of source files lists is not the same as the number of source dirs!"
-    exit 1
-  fi
-
-  resource_string=""
-  if [ "$dataset_kind" == "unsupervised" ]; then
-    resource_string+=" --ignore-missing-txt true"
-  fi
-
-  for i in `seq 0 $(($l1 - 1))`; do
-    resource_string+=" ${my_data_dir[$i]} "
-    resource_string+=" ${my_data_list[$i]} "
-  done
-  local/make_corpus_subset.sh $resource_string ./data/raw_${dataset_type}_data
-  touch data/raw_${dataset_type}_data/.done
-fi
-my_data_dir=`utils/make_absolute.sh ./data/raw_${dataset_type}_data`
-[ -f $my_data_dir/filelist.list ] && my_data_list=$my_data_dir/filelist.list
-nj_max=`cat $my_data_list | wc -l` || nj_max=`ls $my_data_dir/audio | wc -l`
+nj_max=32
 
 if [ "$nj_max" -lt "$my_nj" ] ; then
   echo "Number of jobs ($my_nj) is too big!"
   echo "The maximum reasonable number of jobs is $nj_max"
   my_nj=$nj_max
-fi
-
-#####################################################################
-#
-# Audio data directory preparation
-#
-#####################################################################
-echo ---------------------------------------------------------------------
-echo "Preparing ${dataset_kind} data files in ${dataset_dir} on" `date`
-echo ---------------------------------------------------------------------
-if [ ! -f  $dataset_dir/.done ] ; then
-  if [ "$dataset_kind" == "supervised" ]; then
-    if [ "$dataset_segments" == "seg" ]; then
-      . ./local/datasets/supervised_seg.sh
-    elif [ "$dataset_segments" == "uem" ]; then
-      . ./local/datasets/supervised_uem.sh
-    elif [ "$dataset_segments" == "pem" ]; then
-      . ./local/datasets/supervised_pem.sh
-    else
-      echo "Unknown type of the dataset: \"$dataset_segments\"!";
-      echo "Valid dataset types are: seg, uem, pem";
-      exit 1
-    fi
-  elif [ "$dataset_kind" == "unsupervised" ] ; then
-    if [ "$dataset_segments" == "seg" ] ; then
-      . ./local/datasets/unsupervised_seg.sh 
-    elif [ "$dataset_segments" == "uem" ] ; then
-      . ./local/datasets/unsupervised_uem.sh
-    elif [ "$dataset_segments" == "pem" ] ; then
-      ##This combination does not really makes sense,
-      ##Because the PEM is that we get the segmentation 
-      ##and because of the format of the segment files
-      ##the transcript as well
-      echo "ERROR: $dataset_segments combined with $dataset_type"
-      echo "does not really make any sense!"
-      exit 1
-      #. ./local/datasets/unsupervised_pem.sh
-    else
-      echo "Unknown type of the dataset: \"$dataset_segments\"!";
-      echo "Valid dataset types are: seg, uem, pem";
-      exit 1
-    fi
-  else
-    echo "Unknown kind of the dataset: \"$dataset_kind\"!";
-    echo "Valid dataset kinds are: supervised, unsupervised, shadow";
-    exit 1
-  fi
-
-  if [ ! -f ${dataset_dir}/.plp.done ]; then
-    echo ---------------------------------------------------------------------
-    echo "Preparing ${dataset_kind} parametrization files in ${dataset_dir} on" `date`
-    echo ---------------------------------------------------------------------
-    make_plp ${dataset_dir} exp/make_plp/${dataset_id} plp
-    touch ${dataset_dir}/.plp.done
-  fi
-  touch $dataset_dir/.done 
-fi
-#####################################################################
-#
-# KWS data directory preparation
-#
-#####################################################################
-echo ---------------------------------------------------------------------
-echo "Preparing kws data files in ${dataset_dir} on" `date`
-echo ---------------------------------------------------------------------
-if ! $skip_kws ; then
-  . ./local/datasets/basic_kws.sh
-  if  $extra_kws ; then 
-    . ./local/datasets/extra_kws.sh
-  fi
-  if  $vocab_kws ; then 
-    . ./local/datasets/vocab_kws.sh
-  fi
-fi
-
-if $data_only ; then
-  echo "Exiting, as data-only was requested..."
-  exit 0;
 fi
 
 ####################################################################
@@ -266,7 +167,7 @@ if [ ! -f ${decode}/.done ]; then
   echo "Spawning decoding with SAT models  on" `date`
   echo ---------------------------------------------------------------------
   utils/mkgraph.sh \
-    data/lang exp/tri5 exp/tri5/graph |tee exp/tri5/mkgraph.log
+    data/lang_nosp exp/tri5 exp/tri5/graph |tee exp/tri5/mkgraph.log
 
   mkdir -p $decode
   #By default, we do not care about the lattices for this step -- we just want the transforms
@@ -276,25 +177,29 @@ if [ ! -f ${decode}/.done ]; then
     exp/tri5/graph ${dataset_dir} ${decode} |tee ${decode}/decode.log
   touch ${decode}/.done
 fi
+fast_path=false
+echo $fast_path
 
 if ! $fast_path ; then
   local/run_kws_stt_task.sh --cer $cer --max-states $max_states \
     --skip-scoring $skip_scoring --extra-kws $extra_kws --wip $wip \
     --cmd "$decode_cmd" --skip-kws $skip_kws --skip-stt $skip_stt \
     "${lmwt_plp_extra_opts[@]}" \
-    ${dataset_dir} data/lang ${decode}
+    ${dataset_dir} data/lang_nosp ${decode}
 
   local/run_kws_stt_task.sh --cer $cer --max-states $max_states \
     --skip-scoring $skip_scoring --extra-kws $extra_kws --wip $wip \
     --cmd "$decode_cmd" --skip-kws $skip_kws --skip-stt $skip_stt  \
     "${lmwt_plp_extra_opts[@]}" \
-    ${dataset_dir} data/lang ${decode}.si
+    ${dataset_dir} data/lang_nosp ${decode}.si
 fi
 
 if $tri5_only; then
   echo "--tri5-only is true. So exiting."
   exit 0
 fi
+
+exit 0
 
 ####################################################################
 ## SGMM2 decoding 
@@ -308,7 +213,7 @@ if [ -f exp/sgmm5/.done ]; then
     echo "Spawning $decode on" `date`
     echo ---------------------------------------------------------------------
     utils/mkgraph.sh \
-      data/lang exp/sgmm5 exp/sgmm5/graph |tee exp/sgmm5/mkgraph.log
+      data/lang_nosp exp/sgmm5 exp/sgmm5/graph |tee exp/sgmm5/mkgraph.log
 
     mkdir -p $decode
     steps/decode_sgmm2.sh --skip-scoring true --use-fmllr true --nj $my_nj \

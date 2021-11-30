@@ -46,14 +46,17 @@ if [ ! -f $kw_dir/.rttm.done ]; then
 fi
 
 # Setup KWS
-if [ ! -f $kw_dir/.setup.done ]; then
+if [ ! -f $kw_dir/.prep.done ]; then
     ./local/kws_data_prep.sh $lang $in_dir $kw_dir
-    
-    exit 0
+    touch $kw_dir/.prep.done
+fi
 
-    local/kws_setup.sh \
-    --case_insensitive $case_insensitive \
-    --rttm-file $ou_dir/rttm \
-    $in_dir/ecf.xml $in_dir/keyword.txt $lang $in_dir
+if [ ! -f $kw_dir/.setup.done ]; then
+#    ./local/kws_setup.sh \
+#    --case_insensitive false\
+#    --rttm-file $kw_dir/rttm \
+#    $kw_dir/ecf.xml $kw_dir/keyword.txt $lang $in_dir
     touch $kw_dir/.setup.done
 fi
+
+echo "Congrats!Data Preparation Finished"

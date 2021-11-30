@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
 echo "Loading Config"
-. ./cmd.sh
-. ./path.sh
 . ./conf/common_vars.sh || exit 1;
 . ./conf/lang.conf || exit 1;
+. ./cmd.sh
+. ./path.sh
 echo "Finish Loading Config"
 
 tri5_only=false
@@ -204,7 +204,7 @@ if [ $stage = 15 ]; then
     data/train data/lang_nosp exp/tri5_ali exp/ubm5
 fi
 
-if [ $stage = 16 ]; then
+if [ $stage -le 16 ]; then
   echo ---------------------------------------------------------------------
   echo "Starting exp/sgmm5 on" `date`
   echo ---------------------------------------------------------------------
@@ -225,7 +225,7 @@ fi
 # Ready to start discriminative SGMM training
 ################################################################################
 
-if [ $stage = 17 ]; then
+if [ $stage -le 17 ]; then
   echo ---------------------------------------------------------------------
   echo "Starting exp/sgmm5_ali on" `date`
   echo ---------------------------------------------------------------------
@@ -236,7 +236,7 @@ if [ $stage = 17 ]; then
   touch exp/sgmm5_ali/.done
 fi
 
-if [ $stage = 18 ]; then
+if [ $stage -le 18 ]; then
   echo ---------------------------------------------------------------------
   echo "Starting exp/sgmm5_denlats on" `date`
   echo ---------------------------------------------------------------------
@@ -247,7 +247,7 @@ if [ $stage = 18 ]; then
   touch exp/sgmm5_denlats/.done
 fi
 
-if [ $stage = 19 ]; then
+if [ $stage -le 19 ]; then
   echo ---------------------------------------------------------------------
   echo "Starting exp/sgmm5_mmi_b0.1 on" `date`
   echo ---------------------------------------------------------------------
