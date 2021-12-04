@@ -9,7 +9,7 @@ echo $0 "$@"
 
 #create kws word lists
 if [ ! -f $kws_prep/kwlist.xml ]; then
-    echo '<kwlist ecf_filename="ecf.xml" language="English" encoding="UTF-8" compareNormalize="" version="keywords">' > $kws_prep/kwlist.xml
+    echo '<kwlist ecf_filename="ecf.xml" language="english" encoding="UTF-8" compareNormalize="" version="keywords">' > $kws_prep/kwlist.xml
     n=1
     while IFS='' read -r line || [[ -n "$line" ]]; do
         echo '  <kw kwid="'$n'">' >> $kws_prep/kwlist.xml

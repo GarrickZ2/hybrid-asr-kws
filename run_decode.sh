@@ -172,13 +172,12 @@ if [ ! -f ${decode}/.done ]; then
   mkdir -p $decode
   #By default, we do not care about the lattices for this step -- we just want the transforms
   #Therefore, we will reduce the beam sizes, to reduce the decoding times
-  steps/decode_fmllr_extra.sh --skip-scoring true --beam 10 --lattice-beam 4\
+  steps/decode_fmllr_extra.sh --skip-scoring false --beam 10 --lattice-beam 4\
     --nj $my_nj --cmd "$decode_cmd" "${decode_extra_opts[@]}"\
     exp/tri5/graph ${dataset_dir} ${decode} |tee ${decode}/decode.log
   touch ${decode}/.done
 fi
 fast_path=false
-echo $fast_path
 
 if ! $fast_path ; then
   local/run_kws_stt_task.sh --cer $cer --max-states $max_states \

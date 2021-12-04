@@ -25,6 +25,6 @@ for id in $(cut -f1 -d' ' $wav_files); do
   total_duration=$(perl -E "say $total_duration + $dur")
 done
 
-echo '<ecf source_signal_duration="'$total_duration'" language="" version="Excluded noscore regions">' >> $output_file
+echo '<ecf source_signal_duration="'$total_duration'" language="english" version="Excluded noscore regions">' >> $output_file
 sed -i '1h;1d;$!H;$!d;G' $output_file
 echo "</ecf>" >> $output_file
