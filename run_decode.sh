@@ -177,7 +177,7 @@ if [ ! -f ${decode}/.done ]; then
     exp/tri5/graph ${dataset_dir} ${decode} |tee ${decode}/decode.log
   touch ${decode}/.done
 fi
-fast_path=false
+# fast_path=false
 
 if ! $fast_path ; then
   local/run_kws_stt_task.sh --cer $cer --max-states $max_states \

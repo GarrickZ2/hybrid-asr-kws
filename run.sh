@@ -8,7 +8,7 @@ echo "Loading Config"
 echo "Finish Loading Config"
 
 tri5_only=false
-sgmm5_only=false
+sgmm5_only=true
 data_only=false
 
 stage=$1
@@ -17,14 +17,14 @@ decode_nj=30
 
 
 # download the training data
-if [ $stage = 0 ]; then
+if [ $stage -le 0 ]; then
     echo "===============Start to download necessary data===================="
     local/download_data.sh
     echo "===============Finish download and extract data===================="
 fi
 
 # Split speakers up into 3-minute chunks.
-if [ $stage = 1 ]; then
+if [ $stage -le 1 ]; then
     echo "===============Data Preparation===================="
     local/prepare_data.sh
     for dset in dev test train; do
@@ -34,14 +34,14 @@ if [ $stage = 1 ]; then
 fi
 
 # Prepare the dictionary
-if [ $stage = 2 ]; then
+if [ $stage -le 2 ]; then
     echo "===============Produce the Dict===================="
     local/prepare_dict.sh
     echo "===============Finished Dict Pre===================="
 fi
 
 # Prepare the language file 
-if [ $stage = 3 ]; then
+if [ $stage -le 3 ]; then
     echo "===============Produce the Lang===================="
     utils/prepare_lang.sh data/local/dict_nosp \
     "<unk>" data/local/lang_nosp data/lang_nosp
@@ -49,7 +49,7 @@ if [ $stage = 3 ]; then
 fi
 
 # may be useless put here for later use
-if [ $stage = 4 ]; then
+if [ $stage -le 4 ]; then
     echo "===============Downlaod the LM===================="
     # Download the pre-built LMs from kaldi-asr.org instead of building them
     # locally.
@@ -61,14 +61,14 @@ if [ $stage = 4 ]; then
 fi
 
 # may be useless put here for later use
-if [ $stage = 5 ]; then
+if [ $stage -le 5 ]; then
     echo "===============Format the LMS===================="
     local/format_lms.sh
     echo "===============Finsihed the LMS===================="
 fi
 
 # Feature extraction might be useless
-if [ $stage = 6 ]; then
+if [ $stage -le 6 ]; then
     for set in test dev train; do
         echo "===============Start Extract $set Feature===================="
         if $use_pitch; then
@@ -87,7 +87,7 @@ fi
 # Well create a subset with 10k short segments to make flat-start training easier:
 # Let's create 3 subset would be ok
 # Necessary for tri1 training
-if [ $stage = 7 ]; then
+if [ $stage -le 7 ]; then
     echo "===============Start Create 5k Subset Data===================="
     utils/subset_data_dir.sh --shortest data/train 5000 data/train_5kshort
     utils/data/remove_dup_utts.sh 10 data/train_5kshort data/train_5kshort_nodup
@@ -105,7 +105,7 @@ if [ $stage = 7 ]; then
 fi
 
 # Train
-if [ $stage = 8 ]; then
+if [ $stage -le 8 ]; then
     echo ---------------------------------------------------------------------
     echo "Starting (small) monophone training in exp/mono on" `date`
     echo ---------------------------------------------------------------------
@@ -114,7 +114,7 @@ if [ $stage = 8 ]; then
 fi
 
 
-if [ $stage = 9 ]; then
+if [ $stage -le 9 ]; then
   echo ---------------------------------------------------------------------
   echo "Starting (small) triphone training in exp/tri1 on" `date`
   echo ---------------------------------------------------------------------
@@ -127,7 +127,7 @@ if [ $stage = 9 ]; then
 fi
 # --cmd "$train_cmd" 2500 30000 \
 
-if [ $stage = 10 ]; then
+if [ $stage -le 10 ]; then
   echo ---------------------------------------------------------------------
   echo "Starting (medium) triphone training in exp/tri2 on" `date`
   echo ---------------------------------------------------------------------
@@ -140,7 +140,7 @@ if [ $stage = 10 ]; then
 fi
 # --cmd "$train_cmd" 2500 30000 \
 
-if [ $stage = 11 ]; then
+if [ $stage -le 11 ]; then
   echo ---------------------------------------------------------------------
   echo "Starting (full) triphone training in exp/tri3 on" `date`
   echo ---------------------------------------------------------------------
@@ -153,7 +153,7 @@ if [ $stage = 11 ]; then
 fi
 
 # This will be used in the next segmentation
-if [ $stage = 12 ]; then
+if [ $stage -le 12 ]; then
   echo ---------------------------------------------------------------------
   echo "Starting (lda_mllt) triphone training in exp/tri4 on" `date`
   echo ---------------------------------------------------------------------
@@ -165,7 +165,7 @@ if [ $stage = 12 ]; then
     $numLeavesMLLT $numGaussMLLT data/train data/lang_nosp exp/tri3_ali exp/tri4
 fi
 
-if [ $stage = 13 ]; then
+if [ $stage -le 13 ]; then
   echo ---------------------------------------------------------------------
   echo "Starting (SAT) triphone training in exp/tri5 on" `date`
   echo ---------------------------------------------------------------------
@@ -180,7 +180,7 @@ fi
 ################################################################################
 # Ready to start SGMM training
 ################################################################################
-if [ $stage = 14 ]; then
+if [ $stage -le 14 ]; then
   echo ---------------------------------------------------------------------
   echo "Starting exp/tri5_ali on" `date`
   echo ---------------------------------------------------------------------
@@ -195,7 +195,7 @@ if $tri5_only ; then
   exit 0;
 fi
 
-if [ $stage = 15 ]; then
+if [ $stage -le 15 ]; then
   echo ---------------------------------------------------------------------
   echo "Starting exp/ubm5 on" `date`
   echo ---------------------------------------------------------------------

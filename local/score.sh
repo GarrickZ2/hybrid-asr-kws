@@ -1,1 +1,1 @@
-score_sclite.sh
+run_kws_stt_task.sh

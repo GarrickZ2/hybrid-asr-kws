@@ -2,7 +2,7 @@
 # Copyright 2014  Johns Hopkins University (Author: Yenda Trmal)
 # Apache 2.0
 
-# Begin configuration section.
+# Begin configuration section.  
 iters=5
 stage=0
 encoding='utf-8'
@@ -55,7 +55,7 @@ fi
 if [ ! -z $icu_transform ] ; then
   paste \
     <(cat $lexicon | awk '{print $1}' | uconv -f $encoding -t $encoding -x "$icu_transform") \
-    <(cat $lexicon | sed 's/^[^ \t][^ \t]*[ \t]//g') \
+    <(cat $lexicon | perl -ape 's/^[^ \t][^ \t]*[ \t]//g;') \
   > $wdir/lexicon_transformed.txt
   lexicon=$wdir/lexicon_transformed.txt
 fi
@@ -74,7 +74,7 @@ if [ $stage -le 0 ]; then
 fi
 
 for i in `seq 0 $(($iters-2))`; do
-
+  
   echo "Training the G2P model (iter $[$i + 1] )"
 
   if [ $stage -le $i ]; then
