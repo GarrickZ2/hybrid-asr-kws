@@ -83,12 +83,6 @@ eval my_kwlist_file=$dataset_dir/kws_data/kwlist.xml
 eval my_rttm_file=$dataset_dir/kws_data/rttm
 eval my_nj=\$${dataset_type}_nj  #for shadow, this will be re-set when appropriate
 
-echo $my_stm_file
-echo $my_ecf_file
-echo $my_kwlist_file
-echo $my_rttm_file
-echo $my_nj
-
 my_subset_ecf=false
 eval ind=\${${dataset_type}_subset_ecf+x}
 
@@ -114,46 +108,35 @@ set -u
 unset dir
 unset kind
 
-function make_plp {
-  target=$1
-  logdir=$2
-  output=$3
-  if $use_pitch; then
-    steps/make_plp_pitch.sh --cmd "$decode_cmd" --nj $my_nj $target $logdir $output
-  else
-    steps/make_plp.sh --cmd "$decode_cmd" --nj $my_nj $target $logdir $output
-  fi
-  utils/fix_data_dir.sh $target
-  steps/compute_cmvn_stats.sh $target $logdir $output
-  utils/fix_data_dir.sh $target
-}
-
-function check_variables_are_set {
-  for variable in $mandatory_variables ; do
-    eval my_variable=\$${variable}
-    if [ -z $my_variable ] ; then
-      echo "Mandatory variable ${variable/my/$dataset_type} is not set! " \
-           "You should probably set the variable in the config file "
-      exit 1
-    else
-      echo "$variable=$my_variable"
-    fi
-  done
-
-  if [ ! -z ${optional_variables+x} ] ; then
-    for variable in $optional_variables ; do
-      eval my_variable=\$${variable}
-      echo "$variable=$my_variable"
-    done
-  fi
-}
 
 nj_max=32
+stage=3
+if [ $stage -le 0 ]; then
+  echo "prepare dictionary and lang file with oovs from list OOV_list_1000.txt excluded"
+  local/prepare_dict_ngram_oovs.sh data/lang_nosp data/local/g2p data/local/dict_hybrid/
+  utils/prepare_lang.sh data/local/dict_hybrid/ "<unk>" data/local/lang_hybrid data/lang_hybrid
+fi
 
-if [ "$nj_max" -lt "$my_nj" ] ; then
-  echo "Number of jobs ($my_nj) is too big!"
-  echo "The maximum reasonable number of jobs is $nj_max"
-  my_nj=$nj_max
+if [ $stage -le 1 ]; then
+  echo "make word and phoneme lang folders and LMs"
+  ./local/prepare_lang_wrdphn.sh data/local/dict_hybrid/ "<unk>" data/local/lang_wrdphn_hybrid data/lang_wrd_hybrid/ data/lang_phn_hybrid
+  cat data/local/dict_hybrid/lexicon_raw_nosil.txt | sed 's/[0-9]*//g' | awk '{for (i=2; i<=NF; i++) printf "PHN_"$i " "; print "\n"}' | grep -v '^\s*$' > ./data/lang_phn_hybrid/lm_train_text.txt 
+  ngram-count -text data/lang_phn_hybrid/lm_train_text.txt -order 3 -wbdiscount -interpolate -lm - > data/lang_phn_hybrid/phn.3gram.lm
+
+  echo "filter OOVs from word LM"
+  mkdir -p data/local/local_lm/data/hybrid
+  cat data/local/dict_hybrid/lexicon.txt | awk '{print $1}' > vocab_hybrid.txt
+  change-lm-vocab -vocab vocab_hybrid.txt -lm data/local/local_lm/data/arpa/4gram_big.arpa.gz -write-vocab lm_vocab_hybrid.txt -write-lm data/local/local_lm/data/hybrid/word.3gram.lm -subset -prune-lowprobs -unk -map-unk "<unk>" -order 3
+fi
+
+baseline_lang=lang_hybrid
+hybrid_lang=data/lang_hybrid_transform
+if [ $stage -le 2 ]; then
+  echo "create new combined lang folder"
+  ./local/make_hybrid_fst_3gram.sh 0 1 0 data/lang_phn_hybrid data/lang_wrd_hybrid data/test_hybrid
+  mkdir -p $hybrid_lang
+  cp -r data/$baseline_lang/* $hybrid_lang/
+  fstcompile --acceptor=false --isymbols=$hybrid_lang/words.txt --osymbols=$hybrid_lang/words.txt < data/test_hybrid/G_WRDPHNm_final.txt | fstarcsort --sort_type=ilabel > $hybrid_lang/G.fst
 fi
 
 ####################################################################
@@ -168,6 +151,8 @@ if [ ! -f ${decode}/.done ]; then
   echo ---------------------------------------------------------------------
   utils/mkgraph.sh \
     data/lang_nosp exp/tri5 exp/tri5/graph |tee exp/tri5/mkgraph.log
+  echo mkgraph for hybrid graph
+  utils/mkgraph.sh $hybrid_lang exp/tri5 exp/tri5/hybrid_graph | tee exp/tri5/mkgraph_hybrid.log
 
   mkdir -p $decode
   #By default, we do not care about the lattices for this step -- we just want the transforms
@@ -175,6 +160,12 @@ if [ ! -f ${decode}/.done ]; then
   steps/decode_fmllr_extra.sh --skip-scoring false --beam 10 --lattice-beam 4\
     --nj $my_nj --cmd "$decode_cmd" "${decode_extra_opts[@]}"\
     exp/tri5/graph ${dataset_dir} ${decode} |tee ${decode}/decode.log
+  
+  echo decode graph use hybrid graph
+  steps/decode_fmllr_extra.sh --skip-scoring false --beam 10 --lattice-beam 4\
+    --nj $my_nj --cmd "$decode_cmd" "${decode_extra_opts[@]}"\
+    exp/tri5/hybrid_graph ${dataset_dir} ${decode}_hybrid |tee ${decode}_hybrid/decode.log
+
   touch ${decode}/.done
 fi
 # fast_path=false
@@ -228,41 +219,7 @@ if [ -f exp/sgmm5/.done ]; then
         ${dataset_dir} data/lang  exp/sgmm5/decode_fmllr_${dataset_id}
     fi
   fi
-
-  ####################################################################
-  ##
-  ## SGMM_MMI rescoring
-  ##
-  ####################################################################
-
-  for iter in 1 2 3 4; do
-      # Decode SGMM+MMI (via rescoring).
-    decode=exp/sgmm5_mmi_b0.1/decode_fmllr_${dataset_id}_it$iter
-    if [ ! -f $decode/.done ]; then
-
-      mkdir -p $decode
-      steps/decode_sgmm2_rescore.sh  --skip-scoring true \
-        --cmd "$decode_cmd" --iter $iter --transform-dir exp/tri5/decode_${dataset_id} \
-        data/lang ${dataset_dir} exp/sgmm5/decode_fmllr_${dataset_id} $decode | tee ${decode}/decode.log
-
-      touch $decode/.done
-    fi
-  done
-
-  #We are done -- all lattices has been generated. We have to
-  #a)Run MBR decoding
-  #b)Run KW search
-  for iter in 1 2 3 4; do
-    # Decode SGMM+MMI (via rescoring).
-    decode=exp/sgmm5_mmi_b0.1/decode_fmllr_${dataset_id}_it$iter
-      local/run_kws_stt_task.sh --cer $cer --max-states $max_states \
-        --skip-scoring $skip_scoring --extra-kws $extra_kws --wip $wip \
-        --cmd "$decode_cmd" --skip-kws $skip_kws --skip-stt $skip_stt  \
-      "${lmwt_plp_extra_opts[@]}" \
-      ${dataset_dir} data/lang $decode
-  done
 fi
-
 ####################################################################
 ##
 ## DNN ("compatibility") decoding -- also, just decode the "default" net
@@ -369,33 +326,5 @@ if [ -f exp/tri6_nnet_mpe/.done ]; then
   done
 fi
 
-####################################################################
-##
-## DNN semi-supervised training decoding
-##
-####################################################################
-for dnn in tri6_nnet_semi_supervised tri6_nnet_semi_supervised2 \
-          tri6_nnet_supervised_tuning tri6_nnet_supervised_tuning2 ; do
-  if [ -f exp/$dnn/.done ]; then
-    decode=exp/$dnn/decode_${dataset_id}
-    if [ ! -f $decode/.done ]; then
-      mkdir -p $decode
-      steps/nnet2/decode.sh \
-        --minimize $minimize --cmd "$decode_cmd" --nj $my_nj \
-        --beam $dnn_beam --lattice-beam $dnn_lat_beam \
-        --skip-scoring true "${decode_extra_opts[@]}" \
-        --transform-dir exp/tri5/decode_${dataset_id} \
-        exp/tri5/graph ${dataset_dir} $decode | tee $decode/decode.log
-
-      touch $decode/.done
-    fi
-
-    local/run_kws_stt_task.sh --cer $cer --max-states $max_states \
-      --skip-scoring $skip_scoring --extra-kws $extra_kws --wip $wip \
-      --cmd "$decode_cmd" --skip-kws $skip_kws --skip-stt $skip_stt  \
-      "${lmwt_dnn_extra_opts[@]}" \
-      ${dataset_dir} data/lang $decode
-  fi
-done
 echo "Everything looking good...." 
 exit 0

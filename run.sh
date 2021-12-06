@@ -36,7 +36,14 @@ fi
 # Prepare the dictionary
 if [ $stage -le 2 ]; then
     echo "===============Produce the Dict===================="
+    ./utils/subset_data_dir.sh --per-spk data/train 5 data/train_split
+    mv data/train data/train_orig
+    mv data/train_split data/train
     local/prepare_dict.sh
+    echo "===============Produce the SubDict===================="
+    python local/make_lexicon_subset.py data/train/text data/local/dict_nosp/lexicon.txt > data/local/limited_dict
+    rm -rf data/local/dict_nosp
+    local/prepare_dict.sh --srcdict data/local/limited_dict
     echo "===============Finished Dict Pre===================="
 fi
 
@@ -57,6 +64,8 @@ if [ $stage -le 4 ]; then
     # Uncomment this script to build the language models instead of
     # downloading them from kaldi-asr.org.
     # local/ted_train_lm.sh
+    # local/train_lms_srilm.sh --dev-text data/dev/text \
+    # --train-text data/train/text data data/local/srilm 
     echo "===============Finished the LM===================="
 fi
 
@@ -64,11 +73,29 @@ fi
 if [ $stage -le 5 ]; then
     echo "===============Format the LMS===================="
     local/format_lms.sh
+    # local/arpa2G.sh data/local/srilm/lm.gz data/lang_nosp data/lang_nosp
     echo "===============Finsihed the LMS===================="
 fi
 
-# Feature extraction might be useless
 if [ $stage -le 6 ]; then
+	g2p=data/local/g2p
+	mkdir -p $g2p
+	echo "================Training the G2P==================="
+	sudo python3 $SEQUITUR/bin/g2p.py --train data/local/dict_nosp/lexicon.txt --devel 5% --write-model $g2p/model-1 > $g2p/log-1
+	echo "================Finished Model 1==================="
+	sudo python3 $SEQUITUR/g2p.py --model $g2p/model-1 --ramp-up --train data/local/dict_nosp/lexicon.txt --devel 5% --write-model $g2p/model-2 > $g2p/log-2
+	echo "================Finished Model 2==================="
+	sudo python3 $SEQUITUR/g2p.py --model $g2p/model-2 --ramp-up --train data/local/dict_nosp/lexicon.txt --devel 5% --write-model $g2p/model-3 > $g2p/log-3
+	echo "================Finished Model 3==================="
+	sudo python3 $SEQUITUR/g2p.py --model $g2p/model-3 --ramp-up --train data/local/dict_nosp/lexicon.txt --devel 5% --write-model $g2p/model-4 > $g2p/log-4
+	echo "================Finished Model 4==================="
+	sudo python3 $SEQUITUR/g2p.py --model $g2p/model-4 --ramp-up --train data/local/dict_nosp/lexicon.txt --devel 5% --write-model $g2p/model-5 > $g2p/log-5
+	echo "================Finished Model 5==================="
+	echo "================Finished Training the G2P==================="
+fi
+
+# Feature extraction might be useless
+if [ $stage -le 7 ]; then
     for set in test dev train; do
         echo "===============Start Extract $set Feature===================="
         if $use_pitch; then
@@ -87,7 +114,7 @@ fi
 # Well create a subset with 10k short segments to make flat-start training easier:
 # Let's create 3 subset would be ok
 # Necessary for tri1 training
-if [ $stage -le 7 ]; then
+if [ $stage -le 8 ]; then
     echo "===============Start Create 5k Subset Data===================="
     utils/subset_data_dir.sh --shortest data/train 5000 data/train_5kshort
     utils/data/remove_dup_utts.sh 10 data/train_5kshort data/train_5kshort_nodup
@@ -105,7 +132,7 @@ if [ $stage -le 7 ]; then
 fi
 
 # Train
-if [ $stage -le 8 ]; then
+if [ $stage -le 9 ]; then
     echo ---------------------------------------------------------------------
     echo "Starting (small) monophone training in exp/mono on" `date`
     echo ---------------------------------------------------------------------
@@ -114,7 +141,7 @@ if [ $stage -le 8 ]; then
 fi
 
 
-if [ $stage -le 9 ]; then
+if [ $stage -le 10 ]; then
   echo ---------------------------------------------------------------------
   echo "Starting (small) triphone training in exp/tri1 on" `date`
   echo ---------------------------------------------------------------------
@@ -127,7 +154,7 @@ if [ $stage -le 9 ]; then
 fi
 # --cmd "$train_cmd" 2500 30000 \
 
-if [ $stage -le 10 ]; then
+if [ $stage -le 11 ]; then
   echo ---------------------------------------------------------------------
   echo "Starting (medium) triphone training in exp/tri2 on" `date`
   echo ---------------------------------------------------------------------
@@ -140,7 +167,7 @@ if [ $stage -le 10 ]; then
 fi
 # --cmd "$train_cmd" 2500 30000 \
 
-if [ $stage -le 11 ]; then
+if [ $stage -le 12 ]; then
   echo ---------------------------------------------------------------------
   echo "Starting (full) triphone training in exp/tri3 on" `date`
   echo ---------------------------------------------------------------------
@@ -153,7 +180,7 @@ if [ $stage -le 11 ]; then
 fi
 
 # This will be used in the next segmentation
-if [ $stage -le 12 ]; then
+if [ $stage -le 13 ]; then
   echo ---------------------------------------------------------------------
   echo "Starting (lda_mllt) triphone training in exp/tri4 on" `date`
   echo ---------------------------------------------------------------------
@@ -165,7 +192,7 @@ if [ $stage -le 12 ]; then
     $numLeavesMLLT $numGaussMLLT data/train data/lang_nosp exp/tri3_ali exp/tri4
 fi
 
-if [ $stage -le 13 ]; then
+if [ $stage -le 14 ]; then
   echo ---------------------------------------------------------------------
   echo "Starting (SAT) triphone training in exp/tri5 on" `date`
   echo ---------------------------------------------------------------------
@@ -180,7 +207,7 @@ fi
 ################################################################################
 # Ready to start SGMM training
 ################################################################################
-if [ $stage -le 14 ]; then
+if [ $stage -le 15 ]; then
   echo ---------------------------------------------------------------------
   echo "Starting exp/tri5_ali on" `date`
   echo ---------------------------------------------------------------------
@@ -195,7 +222,7 @@ if $tri5_only ; then
   exit 0;
 fi
 
-if [ $stage -le 15 ]; then
+if [ $stage -le 16 ]; then
   echo ---------------------------------------------------------------------
   echo "Starting exp/ubm5 on" `date`
   echo ---------------------------------------------------------------------
@@ -204,7 +231,7 @@ if [ $stage -le 15 ]; then
     data/train data/lang_nosp exp/tri5_ali exp/ubm5
 fi
 
-if [ $stage -le 16 ]; then
+if [ $stage -le 17 ]; then
   echo ---------------------------------------------------------------------
   echo "Starting exp/sgmm5 on" `date`
   echo ---------------------------------------------------------------------
@@ -224,39 +251,24 @@ fi
 ################################################################################
 # Ready to start discriminative SGMM training
 ################################################################################
-
-if [ $stage -le 17 ]; then
+dir=exp/tri6_nnet
+mkdir -p $dir
+if [ $stage -le 18 ]; then
   echo ---------------------------------------------------------------------
   echo "Starting exp/sgmm5_ali on" `date`
   echo ---------------------------------------------------------------------
-  steps/align_sgmm2.sh \
-    --nj $train_nj --cmd "$train_cmd" --transform-dir exp/tri5_ali \
-    --use-graphs true --use-gselect true \
-    data/train data/lang_nosp exp/sgmm5 exp/sgmm5_ali
-  touch exp/sgmm5_ali/.done
-fi
+  steps/nnet2/train_pnorm.sh \
+    --stage $train_stage --mix-up $dnn_mixup \
+    --initial-learning-rate $dnn_init_learning_rate \
+    --final-learning-rate $dnn_final_learning_rate \
+    --num-hidden-layers $dnn_num_hidden_layers \
+    --pnorm-input-dim $dnn_input_dim \
+    --pnorm-output-dim $dnn_output_dim \
+    --cmd "$train_cmd" \
+    "${dnn_cpu_parallel_opts[@]}" \
+    data/train data/lang exp/tri5_ali $dir || exit 1
 
-if [ $stage -le 18 ]; then
-  echo ---------------------------------------------------------------------
-  echo "Starting exp/sgmm5_denlats on" `date`
-  echo ---------------------------------------------------------------------
-  steps/make_denlats_sgmm2.sh \
-    --nj $train_nj --sub-split $train_nj "${sgmm_denlats_extra_opts[@]}" \
-    --beam 10.0 --lattice-beam 6 --cmd "$decode_cmd" --transform-dir exp/tri5_ali \
-    data/train data/lang_nosp exp/sgmm5_ali exp/sgmm5_denlats
-  touch exp/sgmm5_denlats/.done
-fi
-
-if [ $stage -le 19 ]; then
-  echo ---------------------------------------------------------------------
-  echo "Starting exp/sgmm5_mmi_b0.1 on" `date`
-  echo ---------------------------------------------------------------------
-  steps/train_mmi_sgmm2.sh \
-    --cmd "$train_cmd" "${sgmm_mmi_extra_opts[@]}" \
-    --drop-frames true --transform-dir exp/tri5_ali --boost 0.1 \
-    data/train data/lang_nosp exp/sgmm5_ali exp/sgmm5_denlats \
-    exp/sgmm5_mmi_b0.1
-  touch exp/sgmm5_mmi_b0.1/.done
+  touch $dir/.done
 fi
 
 echo ---------------------------------------------------------------------
@@ -264,3 +276,4 @@ echo "Finished successfully on" `date`
 echo ---------------------------------------------------------------------
 
 exit 0
+
