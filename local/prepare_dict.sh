@@ -11,6 +11,7 @@ dir=data/local/dict_nosp
 mkdir -p $dir
 
 srcdict=db/TEDLIUM_release2/TEDLIUM.152k.dic
+. ./utils/parse_options.sh
 
 [ ! -r $srcdict ] && echo "Missing $srcdict" && exit 1
 
