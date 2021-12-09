@@ -7,9 +7,7 @@ echo "Loading Config"
 . ./path.sh
 echo "Finish Loading Config"
 
-tri5_only=false
-sgmm5_only=true
-data_only=false
+none_rnn=false
 
 stage=$1
 nj=35
@@ -216,12 +214,6 @@ if [ $stage -le 15 ]; then
     data/train data/lang_nosp exp/tri5 exp/tri5_ali
 fi
 
-if $tri5_only ; then
-  echo "Exiting after stage TRI5, as requested. "
-  echo "Everything went fine. Done"
-  exit 0;
-fi
-
 if [ $stage -le 16 ]; then
   echo ---------------------------------------------------------------------
   echo "Starting exp/ubm5 on" `date`
@@ -243,7 +235,7 @@ if [ $stage -le 17 ]; then
   #  data/train data/lang exp/tri5_ali exp/ubm5/final.ubm exp/sgmm5
 fi
 
-if $sgmm5_only ; then
+if $none_rnn ; then
   echo "Exiting after stage SGMM5, as requested. "
   echo "Everything went fine. Done"
   exit 0;
@@ -258,15 +250,14 @@ if [ $stage -le 18 ]; then
   echo "Starting exp/sgmm5_ali on" `date`
   echo ---------------------------------------------------------------------
   steps/nnet2/train_pnorm.sh \
-    --stage $train_stage --mix-up $dnn_mixup \
+    --mix-up $dnn_mixup \
     --initial-learning-rate $dnn_init_learning_rate \
     --final-learning-rate $dnn_final_learning_rate \
     --num-hidden-layers $dnn_num_hidden_layers \
     --pnorm-input-dim $dnn_input_dim \
     --pnorm-output-dim $dnn_output_dim \
     --cmd "$train_cmd" \
-    "${dnn_cpu_parallel_opts[@]}" \
-    data/train data/lang exp/tri5_ali $dir || exit 1
+    data/train data/lang_nosp exp/tri5_ali $dir || exit 1
 
   touch $dir/.done
 fi
