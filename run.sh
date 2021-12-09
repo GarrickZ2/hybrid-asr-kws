@@ -36,6 +36,9 @@ fi
 # Prepare the dictionary
 if [ $stage -le 2 ]; then
     echo "===============Produce the Dict===================="
+    ./utils/subset_data_dir.sh --per-spk data/train 5 data/train_split
+    mv data/train data/train_orig
+    mv data/train_split data/train
     local/prepare_dict.sh
     echo "===============Finished Dict Pre===================="
 fi
@@ -57,6 +60,8 @@ if [ $stage -le 4 ]; then
     # Uncomment this script to build the language models instead of
     # downloading them from kaldi-asr.org.
     # local/ted_train_lm.sh
+    # local/train_lms_srilm.sh --dev-text data/dev/text \
+    # --train-text data/train/text data data/local/srilm 
     echo "===============Finished the LM===================="
 fi
 
@@ -64,6 +69,7 @@ fi
 if [ $stage -le 5 ]; then
     echo "===============Format the LMS===================="
     local/format_lms.sh
+    # local/arpa2G.sh data/local/srilm/lm.gz data/lang_nosp data/lang_nosp
     echo "===============Finsihed the LMS===================="
 fi
 
