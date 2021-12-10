@@ -11,6 +11,7 @@ none_nn=true
 limited_language=false
 limited_lexicon=true
 hybrid_asr=false
+with_gpu=false
 train_stage=0 
 
 
@@ -441,19 +442,30 @@ fi
 dir=exp/tri6_nnet
 if [ ! -f $dir/.done ]; then
 	echo ---------------------------------------------------------------------
-	echo "Starting exp/tri6_nnet on" `date`
+	echo "Starting exp/tri6_nnet with_gpu($with_gpu) on" `date`
 	echo ---------------------------------------------------------------------
 	mkdir -p $dir
-	steps/nnet2/train_pnorm.sh \
-		--stage $train_stage --mix-up $dnn_mixup \
-		--initial-learning-rate $dnn_init_learning_rate \
-		--final-learning-rate $dnn_final_learning_rate \
-		--num-hidden-layers $dnn_num_hidden_layers \
-		--pnorm-input-dim $dnn_input_dim \
-		--pnorm-output-dim $dnn_output_dim \
-		--cmd "$train_cmd" \
-		data/train data/lang_nosp exp/tri5_ali $dir || exit 1
-
+	if $with_gpu ; then
+		steps/nnet2/train_pnorm_fast.sh \
+			--stage $train_stage --mix-up $dnn_mixup \
+			--initial-learning-rate $dnn_init_learning_rate \
+			--final-learning-rate $dnn_final_learning_rate \
+			--num-hidden-layers $dnn_num_hidden_layers \
+			--pnorm-input-dim $dnn_input_dim \
+			--pnorm-output-dim $dnn_output_dim \
+			--cmd "$train_cmd" \
+			data/train data/lang_nosp exp/tri5_ali $dir || exit 1
+	else
+		steps/nnet2/train_pnorm.sh \
+			--stage $train_stage --mix-up $dnn_mixup \
+			--initial-learning-rate $dnn_init_learning_rate \
+			--final-learning-rate $dnn_final_learning_rate \
+			--num-hidden-layers $dnn_num_hidden_layers \
+			--pnorm-input-dim $dnn_input_dim \
+			--pnorm-output-dim $dnn_output_dim \
+			--cmd "$train_cmd" \
+	    	data/train data/lang exp/tri5_ali $dir || exit 1
+	fi
 	touch $dir/.done
 else
 	echo "Have finished tri6_nnet training, won't do it agaion."

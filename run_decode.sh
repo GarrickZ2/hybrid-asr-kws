@@ -18,7 +18,6 @@ skip_scoring=false
 max_states=150000
 extra_kws=true
 vocab_kws=false
-tri5_only=false
 wip=0.5
 
 echo "run-4-test.sh $@"
@@ -37,40 +36,14 @@ fi
 set -o errtrace 
 trap "echo Exited!; exit;" SIGINT SIGTERM
 
-# Set proxy search parameters for the extended lexicon case.
-if [ -f data/.extlex ]; then
-	proxy_phone_beam=$extlex_proxy_phone_beam
-	proxy_phone_nbest=$extlex_proxy_phone_nbest
-	proxy_beam=$extlex_proxy_beam
-	proxy_nbest=$extlex_proxy_nbest
-fi
-
 dataset_segments=${dir##*.}
 dataset_dir=data/$dir
 dataset_id=$dir
 dataset_type=${dir%%.*}
+
 #By default, we want the script to accept how the dataset should be handled,
 #i.e. of  what kind is the dataset
 
-if [ -z ${kind} ] ; then
-	if [ "$dataset_type" == "dev2h" ] || [ "$dataset_type" == "dev10h" ] ; then
-		dataset_kind=supervised
-	else
-		dataset_kind=unsupervised
-	fi
-else
-	dataset_kind=$kind
-fi
-
-if [ -z $dataset_segments ]; then
-	echo "You have to specify the segmentation type as well"
-	echo "If you are trying to decode the PEM segmentation dir"
-	echo "such as data/dev10h, specify dev10h.pem"
-	echo "The valid segmentations types are:"
-	echo "\tpem   #PEM segmentation"
-	echo "\tuem   #UEM segmentation in the CMU database format"
-	echo "\tseg   #UEM segmentation (kaldi-native)"
-fi
 
 #The $dataset_type value will be the dataset name without any extrension
 eval my_stm_file=$dataset_dir/stm
@@ -107,9 +80,9 @@ unset kind
 nj_max=32
 
 if [ "$nj_max" -lt "$my_nj" ] ; then
-  echo "Number of jobs ($my_nj) is too big!"
-  echo "The maximum reasonable number of jobs is $nj_max"
-  my_nj=$nj_max
+	echo "Number of jobs ($my_nj) is too big!"
+	echo "The maximum reasonable number of jobs is $nj_max"
+	my_nj=$nj_max
 fi
 
 ####################################################################
@@ -120,7 +93,7 @@ fi
 decode=exp/tri5/decode_${dataset_id}
 if [ ! -f ${decode}/.done ]; then
 	echo ---------------------------------------------------------------------
-	echo "Spawning decoding with SAT models  on" `date`
+	echo "Decoding with SAT models  on" `date`
 	echo ---------------------------------------------------------------------
 	utils/mkgraph.sh \
 		data/lang_nosp exp/tri5 exp/tri5/graph |tee exp/tri5/mkgraph.log
@@ -135,19 +108,17 @@ if [ ! -f ${decode}/.done ]; then
 	touch ${decode}/.done
 fi
 
-if ! $fast_path ; then
-	local/run_kws_stt_task.sh --cer $cer --max-states $max_states \
-		--skip-scoring $skip_scoring --extra-kws $extra_kws --wip $wip \
-		--cmd "$decode_cmd" --skip-kws $skip_kws --skip-stt $skip_stt \
-		"${lmwt_plp_extra_opts[@]}" \
-		${dataset_dir} data/lang_nosp ${decode}
+local/run_kws_stt_task.sh --cer $cer --max-states $max_states \
+	--skip-scoring $skip_scoring --extra-kws $extra_kws --wip $wip \
+	--cmd "$decode_cmd" --skip-kws $skip_kws --skip-stt $skip_stt \
+	"${lmwt_plp_extra_opts[@]}" \
+	${dataset_dir} data/lang_nosp ${decode}
 
-	local/run_kws_stt_task.sh --cer $cer --max-states $max_states \
-		--skip-scoring $skip_scoring --extra-kws $extra_kws --wip $wip \
-		--cmd "$decode_cmd" --skip-kws $skip_kws --skip-stt $skip_stt  \
-		"${lmwt_plp_extra_opts[@]}" \
-		${dataset_dir} data/lang_nosp ${decode}.si
-fi
+local/run_kws_stt_task.sh --cer $cer --max-states $max_states \
+	--skip-scoring $skip_scoring --extra-kws $extra_kws --wip $wip \
+	--cmd "$decode_cmd" --skip-kws $skip_kws --skip-stt $skip_stt  \
+	"${lmwt_plp_extra_opts[@]}" \
+	${dataset_dir} data/lang_nosp ${decode}.si
 
 ####################################################################
 ## SGMM2 decoding 
@@ -169,38 +140,38 @@ if [ -f $decode/.done ]; then
 	touch $decode/.done
 fi
 
-if ! $fast_path ; then
-	local/run_kws_stt_task.sh --cer $cer --max-states $max_states \
-		--skip-scoring $skip_scoring --extra-kws $extra_kws --wip $wip \
-		--cmd "$decode_cmd" --skip-kws $skip_kws --skip-stt $skip_stt  \
-		"${lmwt_plp_extra_opts[@]}" \
-		${dataset_dir} data/lang  exp/sgmm5/decode_fmllr_${dataset_id}
-fi
+local/run_kws_stt_task.sh --cer $cer --max-states $max_states \
+	--skip-scoring $skip_scoring --extra-kws $extra_kws --wip $wip \
+	--cmd "$decode_cmd" --skip-kws $skip_kws --skip-stt $skip_stt  \
+	"${lmwt_plp_extra_opts[@]}" \
+	${dataset_dir} data/lang  exp/sgmm5/decode_fmllr_${dataset_id}
 
 ####################################################################
 ##
 ## DNN ("compatibility") decoding -- also, just decode the "default" net
 ##
 ####################################################################
-if [ -f exp/tri6_nnet/.done ]; then
-	decode=exp/tri6_nnet/decode_${dataset_id}
-	if [ ! -f $decode/.done ]; then
-		mkdir -p $decode
-		steps/nnet2/decode.sh \
-			--minimize $minimize --cmd "$decode_cmd" --nj $my_nj \
-			--beam $dnn_beam --lattice-beam $dnn_lat_beam \
-			--skip-scoring true "${decode_extra_opts[@]}" \
-			--transform-dir exp/tri5/decode_${dataset_id} \
+decode=exp/tri6_nnet/decode_${dataset_id}
+if [ ! -f $decode/.done ]; then
+	echo ---------------------------------------------------------------------
+	echo "Decoding with normal DNN models  on" `date`
+	echo ---------------------------------------------------------------------
+	mkdir -p $decode
+	steps/nnet2/decode.sh \
+		--minimize $minimize --cmd "$decode_cmd" --nj $my_nj \
+		--beam $dnn_beam --lattice-beam $dnn_lat_beam \
+		--skip-scoring false "${decode_extra_opts[@]}" \
+		--transform-dir exp/tri5/decode_${dataset_id} \
 		exp/tri5/graph ${dataset_dir} $decode | tee $decode/decode.log
 
 	touch $decode/.done
-	fi
-	local/run_kws_stt_task.sh --cer $cer --max-states $max_states \
-		--skip-scoring $skip_scoring --extra-kws $extra_kws --wip $wip \
-		--cmd "$decode_cmd" --skip-kws $skip_kws --skip-stt $skip_stt  \
-		"${lmwt_dnn_extra_opts[@]}" \
-		${dataset_dir} data/lang $decode
 fi
+
+local/run_kws_stt_task.sh --cer $cer --max-states $max_states \
+	--skip-scoring $skip_scoring --extra-kws $extra_kws --wip $wip \
+	--cmd "$decode_cmd" --skip-kws $skip_kws --skip-stt $skip_stt  \
+	"${lmwt_dnn_extra_opts[@]}" \
+	${dataset_dir} data/lang $decode
 
 
 ####################################################################
@@ -210,6 +181,9 @@ fi
 ####################################################################
 decode=exp/tri6a_nnet/decode_${dataset_id}
 if [ ! -f $decode/.done ]; then
+	echo ---------------------------------------------------------------------
+	echo "Decoding with nextgen DNN models  on" `date`
+	echo ---------------------------------------------------------------------
 	mkdir -p $decode
 	steps/nnet2/decode.sh \
 		--minimize $minimize --cmd "$decode_cmd" --nj $my_nj \
@@ -234,6 +208,9 @@ local/run_kws_stt_task.sh --cer $cer --max-states $max_states \
 ####################################################################
 decode=exp/tri6b_nnet/decode_${dataset_id}
 if [ ! -f $decode/.done ]; then
+	echo ---------------------------------------------------------------------
+	echo "Decoding with DNN ensemble models  on" `date`
+	echo ---------------------------------------------------------------------
 	mkdir -p $decode
 	steps/nnet2/decode.sh \
 		--minimize $minimize --cmd "$decode_cmd" --nj $my_nj \
@@ -251,6 +228,8 @@ local/run_kws_stt_task.sh --cer $cer --max-states $max_states \
 	"${lmwt_dnn_extra_opts[@]}" \
 	${dataset_dir} data/lang $decode
 
+
+
 ####################################################################
 ##
 ## DNN_MPE decoding
@@ -259,6 +238,9 @@ local/run_kws_stt_task.sh --cer $cer --max-states $max_states \
 for epoch in 1 2 3 4; do
 	decode=exp/tri6_nnet_mpe/decode_${dataset_id}_epoch$epoch
 	if [ ! -f $decode/.done ]; then
+		echo ---------------------------------------------------------------------
+		echo "Decoding with DNN_MPE models epoch $epoch on" `date`
+		echo ---------------------------------------------------------------------
 		mkdir -p $decode
 		steps/nnet2/decode.sh --minimize $minimize \
 			--cmd "$decode_cmd" --nj $my_nj --iter epoch$epoch \
