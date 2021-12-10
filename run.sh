@@ -9,6 +9,7 @@ nj=35
 decode_nj=30
 none_nn=true
 limited_language=false
+limited_lexicon=true
 hybrid_asr=false
 train_stage=0 
 
@@ -60,10 +61,14 @@ if [ ! -f data/local/dict_nosp/.done ]; then
 		mv data/train data/train_orig
 		mv data/train_split data/train
 		local/prepare_dict.sh
-		echo "===============Produce the SubDict===================="
-		python local/make_lexicon_subset.py data/train/text data/local/dict_nosp/lexicon.txt > data/local/limited_dict
-		rm -rf data/local/dict_nosp
-		local/prepare_dict.sh --srcdict data/local/limited_dict
+		if $limited_lexicon ; then
+			echo ---------------------------------------------------------------------
+			echo " Create the limited lexicon on " `date`
+			echo ---------------------------------------------------------------------
+			python local/make_lexicon_subset.py data/train/text data/local/dict_nosp/lexicon.txt > data/local/limited_dict
+			rm -rf data/local/dict_nosp
+			local/prepare_dict.sh --srcdict data/local/limited_dict
+		fi
 	else
 		local/prepare_dict.sh
 	fi
@@ -163,6 +168,64 @@ if $hybrid_asr ; then
 	else
 		echo "Have finish training G2P model, won't do it agaion."
 		echo "If you want to do it again, remove the .done file under data/local/g2p folder"
+		echo
+	fi
+
+	if [ ! -f data/.hybrid.dict.done ]; then
+		echo ---------------------------------------------------------------------
+		echo " Prepare dictionary and lang file with oovs on " `date`
+		echo ---------------------------------------------------------------------
+		local/prepare_dict_ngram_oovs.sh data/lang_nosp data/local/g2p data/local/dict_hybrid/
+		utils/prepare_lang.sh data/local/dict_hybrid/ "<unk>" data/local/lang_hybrid data/lang_hybrid
+
+		touch data/.hybrid.dict.done
+	else
+		echo "Have finished dictionary prepartion, won't do it agaion."
+		echo "If you want to do it again, remove the .hybrid.dict.done file under data/ folder"
+		echo
+	fi
+
+	if [ ! -f data/.hybrid.lm.done ]; then
+		echo ---------------------------------------------------------------------
+		echo " Prepare hybrid dictionary and lang file on " `date`
+		echo ---------------------------------------------------------------------
+		./local/prepare_lang_wrdphn.sh data/local/dict_hybrid/ "<unk>" data/local/lang_wrdphn_hybrid data/lang_wrd_hybrid/ data/lang_phn_hybrid
+		cat data/local/dict_hybrid/lexicon_raw_nosil.txt | sed 's/[0-9]*//g' | awk '{for (i=2; i<=NF; i++) printf "PHN_"$i " "; print "\n"}' | grep -v '^\s*$' > ./data/lang_phn_hybrid/lm_train_text.txt
+		ngram-count -text data/lang_phn_hybrid/lm_train_text.txt -order 3 -wbdiscount -interpolate -lm - > data/lang_phn_hybrid/phn.3gram.lm
+
+		echo ---------------------------------------------------------------------
+		echo " Filter OOVs from word LM on" `date`
+		echo ---------------------------------------------------------------------
+		mkdir -p data/local/local_lm/data/hybrid
+		cat data/local/dict_hybrid/lexicon.txt | awk '{print $1}' > vocab_hybrid.txt
+		change-lm-vocab -vocab vocab_hybrid.txt -lm data/local/local_lm/data/arpa/4gram_big.arpa.gz -write-vocab lm_vocab_hybrid.txt -write-lm data/local/local_lm/data/hybrid/word.3gram.lm -subset -prune-lowprobs -unk -map-unk "<unk>" -order 3
+
+		touch data/.hybrid.lm.done
+	else
+		echo "Have finished hybrid language modle prep, won't do it agaion."
+		echo "If you want to do it again, remove the .hybrid.lm.done file under data/ folder"
+		echo
+	fi
+
+	baseline_lang=lang_hybrid
+	hybrid_lang=data/lang_hybrid_transform
+	if [ ! -f data/.hybrid.lms.done ]; then
+		echo ---------------------------------------------------------------------
+		echo " Create new combined lang folder on" `date`
+		echo ---------------------------------------------------------------------
+		./local/make_hybrid_fst_3gram.sh 0 1 0 data/lang_phn_hybrid data/lang_wrd_hybrid data/test_hybrid
+		mkdir -p $hybrid_lang
+		cp -r data/$baseline_lang/* $hybrid_lang/
+		fstcompile --acceptor=false --isymbols=$hybrid_lang/words.txt --osymbols=$hybrid_lang/words.txt < data/test_hybrid/G_WRDPHNm_final.txt | fstarcsort --sort_type=ilabel > $hybrid_lang/G.fst
+		mv data/local/lang_nosp data/local/lang_nosp_orig
+		mv data/lang_nosp data/lang_nosp_orig
+		mv data/lang_hybrid_transform data/lang_nosp
+		mv data/local/lang_wrdphn_hybrid data/local/lang_nosp
+
+		touch data/.hybrid.lms.done
+	else
+		echo "Have finished hybrid lang folder prep, won't do it agaion."
+		echo "If you want to do it again, remove the .hybrid.lms.done file under data/ folder"
 		echo
 	fi
 fi
