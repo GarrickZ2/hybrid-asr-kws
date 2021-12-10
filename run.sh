@@ -8,6 +8,9 @@
 nj=35
 decode_nj=30
 none_nn=true
+limited_language=false
+hybrid_asr=false
+train_stage=0 
 
 
 . utils/parse_options.sh
@@ -50,9 +53,20 @@ fi
 # Prepare the dictionary
 if [ ! -f data/local/dict_nosp/.done ]; then
 	echo ---------------------------------------------------------------------
-	echo " Prepare the dictionary on " `date`
+	echo " Prepare the dictionary, with limited_langauge("$limited_language") on " `date`
 	echo ---------------------------------------------------------------------
-    local/prepare_dict.sh
+	if $limited_language ; then
+		./utils/subset_data_dir.sh --per-spk data/train 5 data/train_split
+		mv data/train data/train_orig
+		mv data/train_split data/train
+		local/prepare_dict.sh
+		echo "===============Produce the SubDict===================="
+		python local/make_lexicon_subset.py data/train/text data/local/dict_nosp/lexicon.txt > data/local/limited_dict
+		rm -rf data/local/dict_nosp
+		local/prepare_dict.sh --srcdict data/local/limited_dict
+	else
+		local/prepare_dict.sh
+	fi
 	echo ---------------------------------------------------------------------
 	echo " Finish Preparing the dictionary on " `date`
 	echo ---------------------------------------------------------------------
@@ -69,7 +83,8 @@ if [ ! -f data/dict_nosp/.done ]; then
 	echo " Prepare the lang directory on " `date`
 	echo ---------------------------------------------------------------------
 	utils/prepare_lang.sh data/local/dict_nosp \
-	"<unk>" data/local/lang_nosp data/lang_nosp
+		"<unk>" data/local/lang_nosp data/lang_nosp
+
 	touch data/dict_nosp/.done
 	echo ---------------------------------------------------------------------
 	echo " Finish Preparing the lang directory on " `date`
@@ -111,6 +126,47 @@ else
 	echo "If you want to do it again, remove the .lms.done file under data/local/lm_nosp folder"
 	echo
 fi
+
+if $hybrid_asr ; then
+	echo ---------------------------------------------------------------------
+	echo " Start to prepare data for Hybrid ASR on " `date`
+	echo ---------------------------------------------------------------------
+	g2p=data/local/g2p
+	if [ ! -f $g2p/.done ]; then
+		mkdir -p $g2p
+		echo ---------------------------------------------------------------------
+		echo " Start to Training G2P Model-1 on " `date`
+		echo ---------------------------------------------------------------------
+		python3 $SEQUITUR/bin/g2p.py --train data/local/dict_nosp/lexicon.txt --devel 5% --write-model $g2p/model-1 > $g2p/log-1
+
+		echo ---------------------------------------------------------------------
+		echo " Start to Training G2P Model-2 on " `date`
+		echo ---------------------------------------------------------------------
+		python3 $SEQUITUR/g2p.py --model $g2p/model-1 --ramp-up --train data/local/dict_nosp/lexicon.txt --devel 5% --write-model $g2p/model-2 > $g2p/log-2
+
+		echo ---------------------------------------------------------------------
+		echo " Start to Training G2P Model-3 on " `date`
+		echo ---------------------------------------------------------------------
+		python3 $SEQUITUR/g2p.py --model $g2p/model-2 --ramp-up --train data/local/dict_nosp/lexicon.txt --devel 5% --write-model $g2p/model-3 > $g2p/log-3
+
+		echo ---------------------------------------------------------------------
+		echo " Start to Training G2P Model-4 on " `date`
+		echo ---------------------------------------------------------------------
+		python3 $SEQUITUR/g2p.py --model $g2p/model-3 --ramp-up --train data/local/dict_nosp/lexicon.txt --devel 5% --write-model $g2p/model-4 > $g2p/log-4
+
+		echo ---------------------------------------------------------------------
+		echo " Start to Training G2P Model-5 on " `date`
+		echo ---------------------------------------------------------------------
+		python3 $SEQUITUR/g2p.py --model $g2p/model-4 --ramp-up --train data/local/dict_nosp/lexicon.txt --devel 5% --write-model $g2p/model-5 > $g2p/log-5
+
+		touch $g2p/.done
+	else
+		echo "Have finish training G2P model, won't do it agaion."
+		echo "If you want to do it again, remove the .done file under data/local/g2p folder"
+		echo
+	fi
+fi
+
 
 # Feature extraction might be useless
 if [ ! -f data/.feats.done ]; then
@@ -270,9 +326,6 @@ else
 	echo
 fi
 
-################################################################################
-# Ready to start SGMM training
-################################################################################
 if [ ! -f exp/tri5_ali/.done ]; then
 	echo ---------------------------------------------------------------------
 	echo "Starting exp/tri5_ali on" `date`
@@ -322,42 +375,27 @@ if $none_nn; then
 	exit 0;
 fi
 
-################################################################################
-# Ready to start discriminative SGMM training
-################################################################################
+dir=exp/tri6_nnet
+if [ ! -f $dir/.done ]; then
+	echo ---------------------------------------------------------------------
+	echo "Starting exp/tri6_nnet on" `date`
+	echo ---------------------------------------------------------------------
+	mkdir -p $dir
+	steps/nnet2/train_pnorm.sh \
+		--stage $train_stage --mix-up $dnn_mixup \
+		--initial-learning-rate $dnn_init_learning_rate \
+		--final-learning-rate $dnn_final_learning_rate \
+		--num-hidden-layers $dnn_num_hidden_layers \
+		--pnorm-input-dim $dnn_input_dim \
+		--pnorm-output-dim $dnn_output_dim \
+		--cmd "$train_cmd" \
+		data/train data/lang_nosp exp/tri5_ali $dir || exit 1
 
-if [ $stage -le 17 ]; then
-  echo ---------------------------------------------------------------------
-  echo "Starting exp/sgmm5_ali on" `date`
-  echo ---------------------------------------------------------------------
-  steps/align_sgmm2.sh \
-    --nj $train_nj --cmd "$train_cmd" --transform-dir exp/tri5_ali \
-    --use-graphs true --use-gselect true \
-    data/train data/lang_nosp exp/sgmm5 exp/sgmm5_ali
-  touch exp/sgmm5_ali/.done
-fi
-
-if [ $stage -le 18 ]; then
-  echo ---------------------------------------------------------------------
-  echo "Starting exp/sgmm5_denlats on" `date`
-  echo ---------------------------------------------------------------------
-  steps/make_denlats_sgmm2.sh \
-    --nj $train_nj --sub-split $train_nj "${sgmm_denlats_extra_opts[@]}" \
-    --beam 10.0 --lattice-beam 6 --cmd "$decode_cmd" --transform-dir exp/tri5_ali \
-    data/train data/lang_nosp exp/sgmm5_ali exp/sgmm5_denlats
-  touch exp/sgmm5_denlats/.done
-fi
-
-if [ $stage -le 19 ]; then
-  echo ---------------------------------------------------------------------
-  echo "Starting exp/sgmm5_mmi_b0.1 on" `date`
-  echo ---------------------------------------------------------------------
-  steps/train_mmi_sgmm2.sh \
-    --cmd "$train_cmd" "${sgmm_mmi_extra_opts[@]}" \
-    --drop-frames true --transform-dir exp/tri5_ali --boost 0.1 \
-    data/train data/lang_nosp exp/sgmm5_ali exp/sgmm5_denlats \
-    exp/sgmm5_mmi_b0.1
-  touch exp/sgmm5_mmi_b0.1/.done
+	touch $dir/.done
+else
+	echo "Have finished tri6_nnet training, won't do it agaion."
+	echo "If you want to do it again, remove the .done file under exp/tri6_nnet folder"
+	echo
 fi
 
 echo ---------------------------------------------------------------------
