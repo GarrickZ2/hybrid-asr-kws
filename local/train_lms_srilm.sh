@@ -34,9 +34,9 @@ if [ -z $loc ]; then
   fi
 fi
 
-[ -z $words_file ] && words_file=$datadir/lang/words.txt 
+[ -z $words_file ] && words_file=$datadir/lang_nosp/words.txt 
 [ -z $train_text ] && train_text=$datadir/train/text
-[ -z $dev_text ] && dev_text=$datadir/dev2h/text
+[ -z $dev_text ] && dev_text=$datadir/dev/text
 
 echo "Using words file: $words_file"
 echo "Using train text: $train_text"

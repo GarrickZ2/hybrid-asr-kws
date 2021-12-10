@@ -73,7 +73,7 @@ if ! $skip_stt ; then
 fi
 
 if [ ! -f $data_dir/iv_kws/.done.kws ] ; then
-      local/kws_search.sh --cmd "$cmd" --extraid 'iv' \
+      local/kws/search.sh --cmd "$cmd" --extraid 'iv' \
         --max-states ${max_states} --min-lmwt ${min_lmwt} --skip-scoring false\
          --max-lmwt ${max_lmwt} --indices-dir $decode_dir/kws_indices \
          --model $model \
@@ -82,7 +82,7 @@ if [ ! -f $data_dir/iv_kws/.done.kws ] ; then
 fi
 
 if [ ! -f $data_dir/oov_kws/.done.kws ] ; then
-      local/kws_search.sh --cmd "$cmd" --extraid 'oov'\
+      local/kws/search.sh --cmd "$cmd" --extraid 'oov'\
         --max-states ${max_states} --min-lmwt ${min_lmwt} --skip-scoring false\
          --max-lmwt ${max_lmwt} --indices-dir $decode_dir/kws_indices \
          --model $model \
