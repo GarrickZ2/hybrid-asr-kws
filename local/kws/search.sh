@@ -57,13 +57,13 @@ decodedir=$3
 if [ -z $extraid ] ; then
   kwsdatadir=$datadir/kws
 else
-  kwsdatadir=$datadir/kwset_${extraid}
+  kwsdatadir=$datadir/${extraid}_kws
 fi
 
 if [ -z $extraid ] ; then
   kwsoutdir=$decodedir/kws
 else
-  kwsoutdir=$decodedir/kwset_${extraid}
+  kwsoutdir=$decodedir/${extraid}_kws
 fi
 
 

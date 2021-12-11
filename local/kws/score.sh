@@ -37,7 +37,7 @@ langdir=$1
 if [ -z $extraid ] ; then
   kwsdatadir=$2/kws
 else
-  kwsdatadir=$2/kwset_${extraid}
+  kwsdatadir=$2/${extraid}_kws
 fi
 kwsoutputdir="$3"
 
