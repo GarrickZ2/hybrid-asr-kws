@@ -73,12 +73,23 @@ fi
 
 # Create hitlist
 if [ ! -f $iv_kw_dir/.hitlist.done ]; then
-    cat $in_dir/utt2dur | awk 'BEGIN{i=1}; {print $1, i; i+=1;}' > $iv_kw_dir/utt.map
-	cp $iv_kw_dir/utt.map $oov_kw_dir/utt.map
+	cat $in_dir/utt2dur | awk 'BEGIN{i=1}; {print $1, i; i+=1;}' > $iv_kw_dir/utt.map
 	cat $in_dir/wav.scp | awk 'BEGIN{i=1}; {print $1, i; i+=1;}' > $iv_kw_dir/wav.map
-	cp $iv_kw_dir/wav.map $oov_kw_dir/wav.map
+	cp $lang/words.txt $iv_kw_dir/words.txt
+	cat $iv_kw_dir/keywords.txt | \
+		local/kws/keywords_to_indices.pl --map-oov 0  $iv_kw_dir/words.txt | \
+		sort -u > $iv_kw_dir/keywords.int
     ./local/kws/create_hitlist.sh $in_dir $lang data/local/lang_nosp exp_dev10h.seg/tri5_ali $iv_kw_dir
+
+
+	cat $in_dir/utt2dur | awk 'BEGIN{i=1}; {print $1, i; i+=1;}' > $oov_kw_dir/utt.map
+	cat $in_dir/wav.scp | awk 'BEGIN{i=1}; {print $1, i; i+=1;}' > $oov_kw_dir/wav.map
+	cp $lang/words.txt $oov_kw_dir/words.txt
+	cat $oov_kw_dir/keywords.txt | \
+		local/kws/keywords_to_indices.pl --map-oov 0  $oov_kw_dir/words.txt | \
+		sort -u > $oov_kw_dir/keywords.int
     ./local/kws/create_hitlist.sh $in_dir $lang data/local/lang_nosp exp_dev10h.seg/tri5_ali $oov_kw_dir
+
     touch $iv_kw_dir/.hitlist.done
 else
     echo "Has created hitlist file, won't do it again"
