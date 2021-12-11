@@ -11,7 +11,7 @@ dir=$1
 nj=35
 decode_nj=30
 
-  
+mkdir -p exp_$dir 
 if [ ! -f exp_$dir/mono/.done  ]; then
     echo ---------------------------------------------------------------------
     echo "Starting (small) monophone training in exp/mono on" `date`

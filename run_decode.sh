@@ -20,14 +20,14 @@ extra_kws=true
 vocab_kws=false
 wip=0.5
 
-echo "run-4-test.sh $@"
-
 . utils/parse_options.sh
 
-if [ $# -ne 0 ]; then
-	echo "Usage: $(basename $0) --type (dev10h|dev2h|eval|shadow)"
+if [ $# -ne 1 ]; then
+	echo "Usage: $(basename $0) <decode-dataset>"
+	echo "e.g. : ./run_decode.sh data/dev"
 	exit 1
 fi
+dir=$1
 
 #This seems to be the only functioning way how to ensure the comple
 #set of scripts will exit when sourcing several of them together
@@ -106,6 +106,10 @@ if [ ! -f ${decode}/.done ]; then
 		exp/tri5/graph ${dataset_dir} ${decode} |tee ${decode}/decode.log
 
 	touch ${decode}/.done
+else
+	echo "You have finished decoding on FMLLR"
+	echo "You can delete ${decode}/.done to do it again"
+	echo
 fi
 
 local/run_kws_stt_task.sh --cer $cer --max-states $max_states \
@@ -126,7 +130,7 @@ local/run_kws_stt_task.sh --cer $cer --max-states $max_states \
 ## trained and not PLP system. The DNN systems build only on the top of tri5 stage
 ####################################################################
 decode=exp/sgmm5/decode_fmllr_${dataset_id}
-if [ -f $decode/.done ]; then
+if [ ! -f $decode/.done ]; then
 	echo ---------------------------------------------------------------------
 	echo "Spawning $decode on" `date`
 	echo ---------------------------------------------------------------------
@@ -138,6 +142,10 @@ if [ -f $decode/.done ]; then
 		--cmd "$decode_cmd" --transform-dir exp/tri5/decode_${dataset_id} "${decode_extra_opts[@]}"\
 		exp/sgmm5/graph ${dataset_dir} $decode |tee $decode/decode.log
 	touch $decode/.done
+else
+	echo "You have finished decoding on SGMM2"
+	echo "You can delete ${decode}/.done to do it again"
+	echo
 fi
 
 local/run_kws_stt_task.sh --cer $cer --max-states $max_states \
@@ -152,7 +160,7 @@ local/run_kws_stt_task.sh --cer $cer --max-states $max_states \
 ##
 ####################################################################
 decode=exp/tri6_nnet/decode_${dataset_id}
-if [ -f exp/tri6_nnet/.done ]
+if [ -f exp/tri6_nnet/.done ]; then
 	if [ ! -f $decode/.done ]; then
 		echo ---------------------------------------------------------------------
 		echo "Decoding with normal DNN models  on" `date`

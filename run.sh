@@ -12,8 +12,8 @@ limited_language=false
 limited_lexicon=true
 hybrid_asr=false
 with_gpu=false
-train_stage=0 
-
+train_stage=-10
+decode=true
 
 . utils/parse_options.sh
 
@@ -232,7 +232,7 @@ if $hybrid_asr ; then
 fi
 
 
-# Feature extraction might be useless
+# Feature extraction 
 if [ ! -f data/.feats.done ]; then
 	for set in test dev train; do
 		echo ---------------------------------------------------------------------
@@ -349,6 +349,17 @@ if [ ! -f exp/tri3/.done ]; then
 		--boost-silence $boost_sil --cmd "$train_cmd" \
 		$numLeavesTri3 $numGaussTri3 data/train data/lang_nosp exp/tri2_ali exp/tri3
 	touch exp/tri3/.done
+
+	if [ $decode -a ! -f exp/tri3/.decode.done ]; then
+  		utils/mkgraph.sh data/lang_nosp exp/tri3 exp/tri3/graph_nosp
+		for dset in dev test; do
+			steps/decode.sh --nj $decode_nj --cmd "$decode_cmd"  --num-threads 4 \
+				exp/tri3/graph_nosp data/${dset} exp/tri3/decode_nosp_${dset}
+			steps/lmrescore_const_arpa.sh  --cmd "$decode_cmd" data/lang_nosp data/lang_nosp_rescore \
+				data/${dset} exp/tri3/decode_nosp_${dset} exp/tri3/decode_nosp_${dset}_rescore
+		done
+		touch exp/tri3/.decode.done
+	fi
 else
 	echo "Have finish the full triphone training, won't do it agaion."
 	echo "If you want to do it again, remove the .done file under exp/tri3 folder"
@@ -367,6 +378,17 @@ if [ ! -f exp/tri4/.done ]; then
 		--boost-silence $boost_sil --cmd "$train_cmd" \
 		$numLeavesMLLT $numGaussMLLT data/train data/lang_nosp exp/tri3_ali exp/tri4
 	touch exp/tri4/.done
+
+	if [ $decode -a ! -f exp/tri4/.decode.done ]; then
+  		utils/mkgraph.sh data/lang_nosp exp/tri4 exp/tri4/graph_nosp
+		for dset in dev test; do
+			steps/decode.sh --nj $decode_nj --cmd "$decode_cmd"  --num-threads 4 \
+				exp/tri4/graph_nosp data/${dset} exp/tri4/decode_nosp_${dset}
+			steps/lmrescore_const_arpa.sh  --cmd "$decode_cmd" data/lang_nosp data/lang_nosp_rescore \
+				data/${dset} exp/tri4/decode_nosp_${dset} exp/tri4/decode_nosp_${dset}_rescore
+		done
+		touch exp/tri4/.decode.done
+	fi
 else
 	echo "Have finish lda_mllt training, won't do it agaion."
 	echo "If you want to do it again, remove the .done file under exp/tri4 folder"
