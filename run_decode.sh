@@ -144,7 +144,7 @@ local/run_kws_stt_task.sh --cer $cer --max-states $max_states \
 	--skip-scoring $skip_scoring --extra-kws $extra_kws --wip $wip \
 	--cmd "$decode_cmd" --skip-kws $skip_kws --skip-stt $skip_stt  \
 	"${lmwt_plp_extra_opts[@]}" \
-	${dataset_dir} data/lang  exp/sgmm5/decode_fmllr_${dataset_id}
+	${dataset_dir} data/lang_nosp  exp/sgmm5/decode_fmllr_${dataset_id}
 
 ####################################################################
 ##
@@ -152,54 +152,37 @@ local/run_kws_stt_task.sh --cer $cer --max-states $max_states \
 ##
 ####################################################################
 decode=exp/tri6_nnet/decode_${dataset_id}
-if [ ! -f $decode/.done ]; then
-	echo ---------------------------------------------------------------------
-	echo "Decoding with normal DNN models  on" `date`
-	echo ---------------------------------------------------------------------
-	mkdir -p $decode
-	steps/nnet2/decode.sh \
-		--minimize $minimize --cmd "$decode_cmd" --nj $my_nj \
-		--beam $dnn_beam --lattice-beam $dnn_lat_beam \
-		--skip-scoring false "${decode_extra_opts[@]}" \
-		--transform-dir exp/tri5/decode_${dataset_id} \
-		exp/tri5/graph ${dataset_dir} $decode | tee $decode/decode.log
+if [ -f exp/tri6_nnet/.done ]
+	if [ ! -f $decode/.done ]; then
+		echo ---------------------------------------------------------------------
+		echo "Decoding with normal DNN models  on" `date`
+		echo ---------------------------------------------------------------------
+		mkdir -p $decode
+		steps/nnet2/decode.sh \
+			--minimize $minimize --cmd "$decode_cmd" --nj $my_nj \
+			--beam $dnn_beam --lattice-beam $dnn_lat_beam \
+			--skip-scoring false "${decode_extra_opts[@]}" \
+			--transform-dir exp/tri5/decode_${dataset_id} \
+			exp/tri5/graph ${dataset_dir} $decode | tee $decode/decode.log
 
-	touch $decode/.done
+		touch $decode/.done
+	else
+		echo "You have decoded DNN, won't do it again"
+		echo "You can delete $deocde/.done to decode it again"
+		echo
+	fi
+
+	local/run_kws_stt_task.sh --cer $cer --max-states $max_states \
+		--skip-scoring $skip_scoring --extra-kws $extra_kws --wip $wip \
+		--cmd "$decode_cmd" --skip-kws $skip_kws --skip-stt $skip_stt  \
+		"${lmwt_dnn_extra_opts[@]}" \
+		${dataset_dir} data/lang_nosp $decode
+else
+	echo "Won't decode and rescore based on DNN"
+	echo "You didn't train a DNN model, you can go to run.sh to train a DNN"
+	echo
 fi
 
-local/run_kws_stt_task.sh --cer $cer --max-states $max_states \
-	--skip-scoring $skip_scoring --extra-kws $extra_kws --wip $wip \
-	--cmd "$decode_cmd" --skip-kws $skip_kws --skip-stt $skip_stt  \
-	"${lmwt_dnn_extra_opts[@]}" \
-	${dataset_dir} data/lang $decode
-
-
-####################################################################
-##
-## DNN (nextgen DNN) decoding
-##
-####################################################################
-decode=exp/tri6a_nnet/decode_${dataset_id}
-if [ ! -f $decode/.done ]; then
-	echo ---------------------------------------------------------------------
-	echo "Decoding with nextgen DNN models  on" `date`
-	echo ---------------------------------------------------------------------
-	mkdir -p $decode
-	steps/nnet2/decode.sh \
-		--minimize $minimize --cmd "$decode_cmd" --nj $my_nj \
-		--beam $dnn_beam --lattice-beam $dnn_lat_beam \
-		--skip-scoring true "${decode_extra_opts[@]}" \
-		--transform-dir exp/tri5/decode_${dataset_id} \
-	exp/tri5/graph ${dataset_dir} $decode | tee $decode/decode.log
-
-	touch $decode/.done
-fi
-
-local/run_kws_stt_task.sh --cer $cer --max-states $max_states \
-	--skip-scoring $skip_scoring --extra-kws $extra_kws --wip $wip \
-	--cmd "$decode_cmd" --skip-kws $skip_kws --skip-stt $skip_stt  \
-	"${lmwt_dnn_extra_opts[@]}" \
-	${dataset_dir} data/lang $decode
 
 ####################################################################
 ##
@@ -207,57 +190,36 @@ local/run_kws_stt_task.sh --cer $cer --max-states $max_states \
 ##
 ####################################################################
 decode=exp/tri6b_nnet/decode_${dataset_id}
-if [ ! -f $decode/.done ]; then
-	echo ---------------------------------------------------------------------
-	echo "Decoding with DNN ensemble models  on" `date`
-	echo ---------------------------------------------------------------------
-	mkdir -p $decode
-	steps/nnet2/decode.sh \
-		--minimize $minimize --cmd "$decode_cmd" --nj $my_nj \
-		--beam $dnn_beam --lattice-beam $dnn_lat_beam \
-		--skip-scoring true "${decode_extra_opts[@]}" \
-		--transform-dir exp/tri5/decode_${dataset_id} \
-		exp/tri5/graph ${dataset_dir} $decode | tee $decode/decode.log
-
-	touch $decode/.done
-fi
-
-local/run_kws_stt_task.sh --cer $cer --max-states $max_states \
-	--skip-scoring $skip_scoring --extra-kws $extra_kws --wip $wip \
-	--cmd "$decode_cmd" --skip-kws $skip_kws --skip-stt $skip_stt  \
-	"${lmwt_dnn_extra_opts[@]}" \
-	${dataset_dir} data/lang $decode
-
-
-
-####################################################################
-##
-## DNN_MPE decoding
-##
-####################################################################
-for epoch in 1 2 3 4; do
-	decode=exp/tri6_nnet_mpe/decode_${dataset_id}_epoch$epoch
+if [ -f exp/tri6b_nnet/.done ]; then
 	if [ ! -f $decode/.done ]; then
 		echo ---------------------------------------------------------------------
-		echo "Decoding with DNN_MPE models epoch $epoch on" `date`
+		echo "Decoding with DNN ensemble models  on" `date`
 		echo ---------------------------------------------------------------------
 		mkdir -p $decode
-		steps/nnet2/decode.sh --minimize $minimize \
-			--cmd "$decode_cmd" --nj $my_nj --iter epoch$epoch \
+		steps/nnet2/decode.sh \
+			--minimize $minimize --cmd "$decode_cmd" --nj $my_nj \
 			--beam $dnn_beam --lattice-beam $dnn_lat_beam \
 			--skip-scoring true "${decode_extra_opts[@]}" \
 			--transform-dir exp/tri5/decode_${dataset_id} \
 			exp/tri5/graph ${dataset_dir} $decode | tee $decode/decode.log
 
 		touch $decode/.done
+	else
+		echo "You have decoded DNN ensemble, won't do it again"
+		echo "You can remove $decode/.done to decode again"
+		echo
 	fi
 
 	local/run_kws_stt_task.sh --cer $cer --max-states $max_states \
 		--skip-scoring $skip_scoring --extra-kws $extra_kws --wip $wip \
 		--cmd "$decode_cmd" --skip-kws $skip_kws --skip-stt $skip_stt  \
 		"${lmwt_dnn_extra_opts[@]}" \
-		${dataset_dir} data/lang $decode
-done
+		${dataset_dir} data/lang_nosp $decode
+else
+	echo "Won't decode and rescore based on ensemble DNN"
+	echo "You didn't train a ensemble DNN, you can go to run.sh to train it"
+	echo
+fi
 
 echo "Everything looking good...." 
 exit 0

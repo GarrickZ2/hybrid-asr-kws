@@ -464,12 +464,39 @@ if [ ! -f $dir/.done ]; then
 			--pnorm-input-dim $dnn_input_dim \
 			--pnorm-output-dim $dnn_output_dim \
 			--cmd "$train_cmd" \
-	    	data/train data/lang exp/tri5_ali $dir || exit 1
+	    	data/train data/lang_nosp exp/tri5_ali $dir || exit 1
 	fi
 	touch $dir/.done
 else
-	echo "Have finished tri6_nnet training, won't do it agaion."
+	echo "Have finished tri6_nnet training, won't do it again."
 	echo "If you want to do it again, remove the .done file under exp/tri6_nnet folder"
+	echo
+fi
+
+dir=exp/tri6b_nnet
+if [ ! -f $dir/.done ]; then
+	echo ---------------------------------------------------------------------
+	echo "Starting exp/tri6b_nnet with_gpu($with_gpu) on" `date`
+	echo ---------------------------------------------------------------------
+	dnn_pnorm_input_dim=3000
+	dnn_pnorm_output_dim=300
+	dnn_init_learning_rate=0.004
+	ensemble_size=4
+	initial_beta=0.1
+	steps/nnet2/train_pnorm_ensemble.sh \
+		--stage $train_stage --mix-up $dnn_mixup \
+		--initial-learning-rate $dnn_init_learning_rate \
+		--final-learning-rate $dnn_final_learning_rate \
+		--num-hidden-layers $dnn_num_hidden_layers \
+		--pnorm-input-dim $dnn_pnorm_input_dim \
+		--pnorm-output-dim $dnn_pnorm_output_dim \
+		--cmd "$train_cmd" \
+		--ensemble-size $ensemble_size --initial-beta $initial_beta --final-beta $final_beta \
+		data/train data/lang_nosp exp/tri5_ali $dir || exit 1
+	touch $dir/.done
+else
+	echo "Have finished tri6b_nnet training, won't do it again."
+	echo "If you want to do it again, remove the .done file under exp/tri6b_nnet folder"
 	echo
 fi
 
