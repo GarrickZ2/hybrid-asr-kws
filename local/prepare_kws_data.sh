@@ -86,6 +86,28 @@ else
     echo
 fi
 
+
+
+# Setup KWS
+if [ ! -f $iv_kw_dir/.prep.done ]; then
+    ./local/kws_data_prep.sh $lang $in_dir $iv_kw_dir
+    ./local/kws_data_prep.sh $lang $in_dir $oov_kw_dir
+    ./local/kws_data_prep.sh $lang $in_dir $kw_dir
+    touch $iv_kw_dir/.prep.done
+else
+    echo "Has finished keyword generation"
+    echo "Please remove the $iv_kw_dir/.prep.done to do it again"
+    echo
+fi
+
+if [ ! -f $iv_kw_dir/.setup.done ]; then
+#    ./local/kws_setup.sh \
+#    --case_insensitive false\
+#    --rttm-file $kw_dir/rttm \
+#    $kw_dir/ecf.xml $kw_dir/keyword.txt $lang $in_dir
+    touch $iv_kw_dir/.setup.done
+fi
+
 # Create hitlist
 if [ ! -f $iv_kw_dir/.hitlist.done ]; then
 	cat $in_dir/utt2dur | awk 'BEGIN{i=1}; {print $1, i; i+=1;}' > $iv_kw_dir/utt.map
@@ -114,29 +136,5 @@ else
     echo
 fi
 
-# Setup KWS
-if [ ! -f $iv_kw_dir/.prep.done ]; then
-    ./local/kws_data_prep.sh $lang $in_dir $iv_kw_dir
-    ./local/kws_data_prep.sh $lang $in_dir $oov_kw_dir
-    ./local/kws_data_prep.sh $lang $in_dir $kw_dir
-    touch $iv_kw_dir/.prep.done
-else
-    echo "Has finished keyword generation"
-    echo "Please remove the $iv_kw_dir/.prep.done to do it again"
-    echo
-fi
-
-if [ ! -f $iv_kw_dir/.setup.done ]; then
-#    ./local/kws_setup.sh \
-#    --case_insensitive false\
-#    --rttm-file $kw_dir/rttm \
-#    $kw_dir/ecf.xml $kw_dir/keyword.txt $lang $in_dir
-    touch $iv_kw_dir/.setup.done
-fi
-./local/kws/create_hitlist.sh $in_dir $lang data/local/lang_nosp $exp_dir/tri5_ali $iv_kw_dir
-./local/kws/create_hitlist.sh $in_dir $lang data/local/lang_nosp $exp_dir/tri5_ali $kw_dir
-echo "Last steps, please run the following script manually!!!!"
-echo -------------------------------------------
-echo "./local/kws/create_hitlist.sh $in_dir $lang data/local/lang_nosp $exp_dir/tri5_ali $iv_kw_dir"
-echo "./local/kws/create_hitlist.sh $in_dir $lang data/local/lang_nosp $exp_dir/tri5_ali $kw_dir"
-echo -------------------------------------------
+# ./local/kws/create_hitlist.sh $in_dir $lang data/local/lang_nosp $exp_dir/tri5_ali $iv_kw_dir
+# ./local/kws/create_hitlist.sh $in_dir $lang data/local/lang_nosp $exp_dir/tri5_ali $kw_dir
