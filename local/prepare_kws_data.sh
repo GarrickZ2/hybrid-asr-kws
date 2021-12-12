@@ -13,8 +13,8 @@ if [ $# != 2 ]; then
     exit 0
 fi
 
-in_dir=`utils/make_absolute.sh $1`
-lang=`utils/make_absolute.sh $2`
+in_dir=$1
+lang=$2
 
 kw_dir=$in_dir/kws
 iv_kw_dir=$in_dir/iv_kws
