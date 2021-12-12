@@ -95,6 +95,7 @@ if [ ! -f $iv_kw_dir/.hitlist.done ]; then
 		local/kws/keywords_to_indices.pl --map-oov 0  $iv_kw_dir/words.txt | \
 		sort -u > $iv_kw_dir/keywords.int
     ./local/kws/create_hitlist.sh $in_dir $lang data/local/lang_nosp $exp_dir/tri5_ali $iv_kw_dir
+    echo "./local/kws/create_hitlist.sh $in_dir $lang data/local/lang_nosp $exp_dir/tri5_ali $iv_kw_dir"
 
 
 	cat $in_dir/utt2dur | awk 'BEGIN{i=1}; {print $1, i; i+=1;}' > $kw_dir/utt.map
@@ -103,7 +104,8 @@ if [ ! -f $iv_kw_dir/.hitlist.done ]; then
 	cat $kw_dir/keyword.txt | \
 		local/kws/keywords_to_indices.pl --map-oov 0  $kw_dir/words.txt | \
 		sort -u > $kw_dir/keywords.int
-    ./local/kws/create_hitlist.sh $in_dir $lang data/local/lang_nosp exp_dev10h.seg/tri5_ali $kw_dir
+    ./local/kws/create_hitlist.sh $in_dir $lang data/local/lang_nosp $exp_dir/tri5_ali $kw_dir
+    echo "./local/kws/create_hitlist.sh $in_dir $lang data/local/lang_nosp $exp_dir/tri5_ali $kw_dir"
 
     touch $iv_kw_dir/.hitlist.done
 else
