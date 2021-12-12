@@ -21,6 +21,7 @@ iv_kw_dir=$in_dir/iv_kws
 oov_kw_dir=$in_dir/oov_kws
 
 dir_id=${in_dir##*/}
+exp_dir=exp_$dir_id
 
 mkdir -p $kw_dir
 mkdir -p $iv_kw_dir
@@ -75,13 +76,13 @@ fi
 # Create RTTM file
 if [ ! -f $iv_kw_dir/.rttm.done ]; then
     ./local/create_rttm.sh $dir_id
-    cp exp_dev10h.seg/tri5_ali/rttm $oov_kw_dir/rttm
-    cp exp_dev10h.seg/tri5_ali/rttm $iv_kw_dir/rttm
-    cp exp_dev10h.seg/tri5_ali/rttm $kw_dir/rttm
+    cp $exp_dir/tri5_ali/rttm $oov_kw_dir/rttm
+    cp $exp_dir/tri5_ali/rttm $iv_kw_dir/rttm
+    cp $exp_dir/tri5_ali/rttm $kw_dir/rttm
     touch $iv_kw_dir/.rttm.done
 else
     echo "Has created RTTM file, won't do it again"
-    echo "Please remove $iv_kw_dir/.rttm.done and exp_dev10h.seg/"
+    echo "Please remove $iv_kw_dir/.rttm.done and $exp_dir"
     echo
 fi
 
@@ -93,7 +94,7 @@ if [ ! -f $iv_kw_dir/.hitlist.done ]; then
 	cat $iv_kw_dir/keyword.txt | \
 		local/kws/keywords_to_indices.pl --map-oov 0  $iv_kw_dir/words.txt | \
 		sort -u > $iv_kw_dir/keywords.int
-    ./local/kws/create_hitlist.sh $in_dir $lang data/local/lang_nosp exp_dev10h.seg/tri5_ali $iv_kw_dir
+    ./local/kws/create_hitlist.sh $in_dir $lang data/local/lang_nosp $exp_dir/tri5_ali $iv_kw_dir
 
 
 	cat $in_dir/utt2dur | awk 'BEGIN{i=1}; {print $1, i; i+=1;}' > $kw_dir/utt.map
