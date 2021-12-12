@@ -27,7 +27,7 @@ if [ $# -ne 1 ]; then
 	echo "e.g. : ./run_decode.sh data/dev"
 	exit 1
 fi
-dir=$1
+dataset_dir=$1
 
 #This seems to be the only functioning way how to ensure the comple
 #set of scripts will exit when sourcing several of them together
@@ -36,9 +36,7 @@ dir=$1
 set -o errtrace 
 trap "echo Exited!; exit;" SIGINT SIGTERM
 
-dataset_segments=${dir##*.}
-dataset_dir=data/$dir
-dataset_id=$dir
+dataset_id=${dataset_dir##*/}
 dataset_type=${dir%%.*}
 
 #By default, we want the script to accept how the dataset should be handled,
@@ -176,7 +174,7 @@ if [ -f exp/tri6_nnet/.done ]; then
 		touch $decode/.done
 	else
 		echo "You have decoded DNN, won't do it again"
-		echo "You can delete $deocde/.done to decode it again"
+		echo "You can delete $decode/.done to decode it again"
 		echo
 	fi
 
