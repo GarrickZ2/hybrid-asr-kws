@@ -4,11 +4,11 @@
 
 This is the project for Columbia University COMS 6998 Fund Speech Recognization. It provides the scripts researching on Keyword-Spotting on TED-LIUM database.
 
-1. [Configure Environment](#Configure Environment)
-2. [Quick Start](#Quick Start)
-3. [Train Model](#Train Model)
-4. [Generate KWS Data](#Generate KWS Data)
-5. [Decode Model](#Decode Model)
+1. [Configure Environment](#Configure-Environment)
+2. [Quick Start](#Quick-Start)
+3. [Train Model](#Train-Model)
+4. [Generate KWS Data](#Generate-KWS-Data)
+5. [Decode Model](#Decode-Model)
 6. [Reference](#Reference)
 
 ## Configure Environment
