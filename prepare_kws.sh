@@ -23,7 +23,7 @@ if [ $# -ne 1 ]; then
     exit 0
 fi
 
-if generate_keyword ; then
+if $generate_keyword ; then
     echo "Start to generated random detected keyword."
     echo "Including 2000 In-Voc Keyword and 800 Out-of-Voc Keyword"
     echo "This gonna cost some time, please wait..."

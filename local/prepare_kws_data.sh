@@ -133,5 +133,10 @@ if [ ! -f $iv_kw_dir/.setup.done ]; then
 #    $kw_dir/ecf.xml $kw_dir/keyword.txt $lang $in_dir
     touch $iv_kw_dir/.setup.done
 fi
-
-echo "Congrats!Data Preparation Finished"
+./local/kws/create_hitlist.sh $in_dir $lang data/local/lang_nosp $exp_dir/tri5_ali $iv_kw_dir
+./local/kws/create_hitlist.sh $in_dir $lang data/local/lang_nosp $exp_dir/tri5_ali $kw_dir
+echo "Last steps, please run the following script manually!!!!"
+echo -------------------------------------------
+echo "./local/kws/create_hitlist.sh $in_dir $lang data/local/lang_nosp $exp_dir/tri5_ali $iv_kw_dir"
+echo "./local/kws/create_hitlist.sh $in_dir $lang data/local/lang_nosp $exp_dir/tri5_ali $kw_dir"
+echo -------------------------------------------
