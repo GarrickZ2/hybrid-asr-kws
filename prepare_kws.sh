@@ -1,3 +1,12 @@
+#!/bin/bash 
+set -e
+set -o pipefail
+
+. ./cmd.sh
+. ./path.sh
+. ./conf/common_vars.sh || exit 1;
+. ./conf/lang.conf || exit 1;
+
 generate_keyword=false
 data_dir=$1
 lang=data/local/dict_nosp
