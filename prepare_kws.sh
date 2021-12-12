@@ -12,6 +12,7 @@ if [ $# -ne 1 ]; then
     echo "If you want to use your own keyword list, please provide ivkwlist.txt and oovkwlist.txt under <data-dir>"
     echo "ivkwlist.txt contains the in-voc keywords and oovkwlist.txt contains the out-of-voc keywords"
     exit 0
+fi
 
 if generate_keyword ; then
     echo "Start to generated random detected keyword."

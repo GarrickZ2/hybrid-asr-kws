@@ -22,6 +22,7 @@ oov_kw_dir=$in_dir/oov_kws
 
 dir_id=${in_dir##*/}
 
+mkdir -p $kw_dir
 mkdir -p $iv_kw_dir
 mkdir -p $oov_kw_dir
 
