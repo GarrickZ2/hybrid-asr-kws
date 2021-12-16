@@ -25,6 +25,8 @@ wip=0.5
 if [ $# -ne 1 ]; then
 	echo "Usage: $(basename $0) <decode-dataset>"
 	echo "e.g. : ./run_decode.sh data/dev"
+	echo "Before you use your dataset, please run ./prepare_kws.sh <dataset> first"
+	echo "It will prepare all the necessary files for decoding part, it's important for KWS"
 	exit 1
 fi
 dataset_dir=$1

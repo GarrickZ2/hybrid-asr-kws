@@ -8,12 +8,14 @@
 nj=35
 decode_nj=30
 none_nn=true
-limited_language=false
+limited_language=true
 limited_lexicon=true
-hybrid_asr=false
+hybrid_asr=true
 with_gpu=false
 train_stage=-10
-decode=true
+decode=false # This option is used to get the performance for middle layer's model
+			 # It really slowing down the training process, try not to turn it on
+			 # For the real decoding, please run run_decode.sh
 
 . utils/parse_options.sh
 
@@ -102,13 +104,13 @@ else
 fi
 
 # may be useless put here for later use
-if [ ! -f data/local/lm_nosp/.done ]; then
+if [ ! -f data/local/local_lm/.done ]; then
 	echo ---------------------------------------------------------------------
 	echo " Prepare the lang directory on " `date`
 	echo ---------------------------------------------------------------------
 	local/ted_download_lm.sh
 	# local/ted_train_lm.sh
-	touch data/local/lm_nosp/.done
+	touch data/local/local_lm/.done
 	echo ---------------------------------------------------------------------
 	echo " Finish Preparing the lang directory on " `date`
 	echo ---------------------------------------------------------------------
@@ -118,12 +120,12 @@ else
 	echo
 fi
 
-if [ ! -f data/local/lm_nosp/.lms.done ]; then
+if [ ! -f data/local/local_lm/.lms.done ]; then
 	echo ---------------------------------------------------------------------
 	echo " Prepare the lms on " `date`
 	echo ---------------------------------------------------------------------
     local/format_lms.sh
-	touch data/local/lm_nosp/.lms.done
+	touch data/local/local_lm/.lms.done
 	echo ---------------------------------------------------------------------
 	echo " Finish Preparing lms on " `date`
 	echo ---------------------------------------------------------------------
@@ -505,6 +507,7 @@ if [ ! -f $dir/.done ]; then
 	dnn_init_learning_rate=0.004
 	ensemble_size=4
 	initial_beta=0.1
+	final_beta=0.2
 	steps/nnet2/train_pnorm_ensemble.sh \
 		--stage $train_stage --mix-up $dnn_mixup \
 		--initial-learning-rate $dnn_init_learning_rate \

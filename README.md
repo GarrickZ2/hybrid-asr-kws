@@ -1,15 +1,42 @@
 # Code Running Instruction
 
+
+
 ## Introduction
 
-This is the project for Columbia University COMS 6998 Fund Speech Recognization. It provides the scripts researching on Keyword-Spotting on TED-LIUM database.
+Zixuan Zhang UNI: zz2888 Date: Dec 16 2021
+
+**Project Title:** Research on incorporating hybrid ASR model to improve KWS-OOV search performance
+
+**Project Summary:**
+
+This is the project code for Columbia University COMS 6998 Fund Speech Recognization. It provides the scripts researching on Keyword-Spotting on TED-LIUM database.
+
+My paper introduce the basic background and main issues of keyword searching, implements LVCSR-KWS model on TED-LIUM data set, and compares and analyzes the effect of proxy search method and Hybrid model method to solve OOV problem. We simulate full language with full Lexicon, limited language with Limited Lexicon (use proxy search and hybrid-asr model), Let me try it in four different ways. We also explore the impact of increasing model complexity on different situations.
+
+**Project Tools:** All the tools are listed in section [Configure Environment](#Configure-Environment). For a brief overview, we used Kaldi, SRILM, Pocolm, Sequitur, SGMM2, Perl, F4DE. Kaldi provides the install scripts for most of tools besides some Perl packages and F4DE. We provide the installation method for every tools in detail.
+
+**Main Scripts:**
+
+We provide 4 executable files in main directory to perform our full project. To simply run these code, follow the instruction in [Quick Start](#Quick-Start)
+
+run.sh : Train model. Detail in section [Train Model](#Train-Model)
+
+prepare_kws.sh: Generate KWS necessary files. Detail in section [Generate KWS Data](#Generate-KWS-Data)
+
+run_decode.sh : Decode the model and perform KWS. Detail in section [Decode Model](#Decode-Model)
+
+clean.sh: Clean all the generated data during the Training, Decoding process. When you want to re-run the model, use this.
+
+**Table of Content:**
 
 1. [Configure Environment](#Configure-Environment)
 2. [Quick Start](#Quick-Start)
 3. [Train Model](#Train-Model)
 4. [Generate KWS Data](#Generate-KWS-Data)
 5. [Decode Model](#Decode-Model)
-6. [Reference](#Reference)
+6. [Code Contribution](#Code-Contribution)
+7. [Reference](#Reference)
 
 ## Configure Environment
 
@@ -99,7 +126,7 @@ cd KROOT/src/sgmm2bin
 make -j${nproc}
 ```
 
-### Perl
+### Install Perl Package
 
 We have to install some additional package for PERL
 
@@ -110,7 +137,7 @@ apt-get install libexpat1-dev
 perl -MCPAN -e 'install XML::Simple' || cpan XML::Simple || cpanm XML::Simple
 ```
 
-### F4DE
+### Install F4DE
 
 We will use F4DE as the process to score the KWS performance.
 
@@ -120,12 +147,15 @@ Detail for install F4DE is in its GitHub : https://github.com/usnistgov/F4DE#set
 
 Please install our code under KROOT/egs/tedlium
 
-After finish environment configuration, to quick start a KWS model, you can directly run the following script:
+After finishing environment configuration, to quick start a KWS model, you can directly run the following script:
 
 ```shell
-./run.sh
-./prepare_kws.sh data/dev
-./run_decode.sh data/dev
+./run.sh										#First step: Training the model
+./prepare_kws.sh data/dev		#Second Step:Prepare the kws data for score
+./run_decode.sh data/dev		#Third Step: Decoding the model and perform score
+
+./clean.sh									#Attention!!! If you want to run with different option, run clean.sh firstly.
+														#It will clean all the training and decoding data, please be careful.
 ```
 
 ## Train Model
@@ -238,7 +268,31 @@ This step will automatically detect the model you trained, then try to decode th
 ./prepare_kws.sh data/dev
 ```
 
+## Code Contribution
 
+### Code in Main Directory
+
+1.   run.sh: Rewrite the whole script for tedlium to implement a SGMM (based on PLP feature) model to conduct KWS
+2.   prepare_kws.sh: The whole script write by me to help you generate any relevant files for KWS including kwlist, rttm, ecf, etc. You don't have to prepare these files manually anymore.
+3.   run_decode.sh: Refer to the decode script under babel script and modify it to fit for our project.
+4.   clean.sh: simple clean script to clean training data.
+
+### Code in Local Directory
+
+I write the following new script in local directory for:
+
+1.   convert_word2voc.py [new]
+2.   create_ecf_file.sh [new]
+3.   create_keyword.py [new]
+4.   create_rttm.sh [new]
+5.   create_sub_train.sh [new]
+6.   prepare_kwlist.sh [new]
+7.   prepare_kws_data.sh [new]
+8.    run_kws_stt_task.sh [modified]
+
+### Code in Config Directory
+
+Prepare the ivkwslist(in-voc keyword list for tedlium) and oovkwslist(out-of-voc keyword list for tedlium)
 
 ## Reference
 
