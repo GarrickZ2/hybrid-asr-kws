@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# The whole file written by zz2888
+
 if [ $# -ne 2 ]; then
    echo "usage: kws_scripts/create_ecf_file.sh <wav file lists> <output location>"
    echo "e.g.:  kws_scripts/create_ecf_file.sh data/yle-dev-new/wav.scp data/kws_prep/ecf.xml"

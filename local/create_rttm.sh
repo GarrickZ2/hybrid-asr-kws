@@ -1,4 +1,6 @@
 #!/bin/bash
+# Whole file written by zz2888
+
 
 echo "Loading Config"
 . ./conf/common_vars.sh || exit 1;

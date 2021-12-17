@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Whole file written by zz2888
 
 echo "Loading Config"
 . ./cmd.sh

@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+# run.sh : perform the training process for our model.
+# Nearly every line of this script has been touched by zz2888, some are new some are modified.
+# I have also indicated the new block by comment with zz2888
+
 . ./conf/common_vars.sh || exit 1;
 . ./conf/lang.conf || exit 1;
 . ./cmd.sh
@@ -55,6 +59,7 @@ else
 fi
 
 # Prepare the dictionary
+# Block written by zz2888: adding limited lexicon and limited language
 if [ ! -f data/local/dict_nosp/.done ]; then
 	echo ---------------------------------------------------------------------
 	echo " Prepare the dictionary, with limited_langauge("$limited_language") on " `date`
@@ -135,6 +140,7 @@ else
 	echo
 fi
 
+# Block written by zz2888: add hybrid asr model
 if $hybrid_asr ; then
 	echo ---------------------------------------------------------------------
 	echo " Start to prepare data for Hybrid ASR on " `date`
@@ -259,6 +265,7 @@ else
 	echo
 fi
 
+# Block written by zz2888: add sub-directory
 # Now we have 212 hours of training data.
 # Well create a subset with 10k short segments to make flat-start training easier:
 # Let's create 3 subset would be ok
@@ -303,7 +310,7 @@ else
 	echo
 fi
 
-
+# Block written by zz2888: sub-directory train1
 if [ ! -f exp/tri1/.done ]; then
 	echo ---------------------------------------------------------------------
 	echo "Starting (small) triphone training in exp/tri1 on" `date`
@@ -322,6 +329,7 @@ else
 	echo
 fi
 
+# Block written by zz2888: sub-directory train2
 if [ ! -f exp/tri2/.done ]; then
 	echo ---------------------------------------------------------------------
 	echo "Starting (medium) triphone training in exp/tri2 on" `date`
@@ -340,6 +348,7 @@ else
 fi
 # --cmd "$train_cmd" 2500 30000 \
 
+# Block written by zz2888: sub-directory train3
 if [ ! -f exp/tri3/.done ]; then
 	echo ---------------------------------------------------------------------
 	echo "Starting (full) triphone training in exp/tri3 on" `date`
@@ -368,6 +377,7 @@ else
 	echo
 fi
 
+# Block written by zz2888: Train lda_mllt model
 # This will be used in the next segmentation
 if [ ! -f exp/tri4/.done ]; then
 	echo ---------------------------------------------------------------------
@@ -397,6 +407,7 @@ else
 	echo
 fi
 
+# Block written by zz2888: Train SAT model based on LAD_MLLT
 if [ ! -f exp/tri5/.done ]; then
 	echo ---------------------------------------------------------------------
 	echo "Starting (SAT) triphone training in exp/tri5 on" `date`
@@ -414,6 +425,7 @@ else
 	echo
 fi
 
+# Block Written by zz2888: Training fMLLR
 if [ ! -f exp/tri5_ali/.done ]; then
 	echo ---------------------------------------------------------------------
 	echo "Starting exp/tri5_ali on" `date`
@@ -442,6 +454,7 @@ else
 	echo
 fi
 
+# Block Written by zz2888: Training SGMM2
 if [ ! -f exp/sgmm5/.done ]; then
 	echo ---------------------------------------------------------------------
 	echo "Starting exp/sgmm5 on" `date`
@@ -463,6 +476,7 @@ if $none_nn; then
 	exit 0;
 fi
 
+# Block Written by zz2888: Training NNET
 dir=exp/tri6_nnet
 if [ ! -f $dir/.done ]; then
 	echo ---------------------------------------------------------------------

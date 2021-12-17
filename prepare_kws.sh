@@ -1,4 +1,5 @@
 #!/bin/bash 
+# The whole file is written by zz2888
 set -e
 set -o pipefail
 

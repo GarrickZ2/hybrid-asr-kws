@@ -1,3 +1,5 @@
+# Whole file written by zz2888
+
 import sys
 import random
 

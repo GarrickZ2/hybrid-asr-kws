@@ -71,7 +71,7 @@ if ! $skip_stt ; then
     touch $decode_dir/.done.score
   fi
 fi
-
+# Modified by zz2888 since here to the end
 if [ ! -f $decode_dir/.done.kws ] ; then
       local/kws/search.sh --cmd "$cmd" \
         --max-states ${max_states} --min-lmwt ${min_lmwt} --skip-scoring false\

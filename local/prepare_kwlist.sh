@@ -1,4 +1,5 @@
 #!/bin/bash
+# Whole file written by zz2888
 
 kws_prep=$1
 #specify the subword segmentation or leave it empyt for words

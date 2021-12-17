@@ -1,3 +1,4 @@
+# The whole file written by zz2888
 import sys
 
 if len(sys.argv) != 2:
