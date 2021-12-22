@@ -4,13 +4,9 @@
 
 ## Introduction
 
-Zixuan Zhang UNI: zz2888 Date: Dec 16 2021
-
-**Project Title:** Research on incorporating hybrid ASR model to improve KWS-OOV search performance
-
 **Project Summary:**
 
-This is the project code for Columbia University COMS 6998 Fund Speech Recognization. It provides the scripts researching on Keyword-Spotting on TED-LIUM database.
+This is the project code for Columbia University Fund Speech Recognization in kWS area. It provides the scripts researching on Keyword-Spotting on TED-LIUM database.
 
 My paper introduce the basic background and main issues of keyword searching, implements LVCSR-KWS model on TED-LIUM data set, and compares and analyzes the effect of proxy search method and Hybrid model method to solve OOV problem. We simulate full language with full Lexicon, limited language with Limited Lexicon (use proxy search and hybrid-asr model), Let me try it in four different ways. We also explore the impact of increasing model complexity on different situations.
 
